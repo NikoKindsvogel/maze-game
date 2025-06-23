@@ -7,7 +7,6 @@ const (
 	Wall
 	Hole
 	River
-	Treasure
 	Exit
 	Hospital
 	Armory

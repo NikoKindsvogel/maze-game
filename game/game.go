@@ -14,14 +14,14 @@ type Game struct {
 }
 
 func NewGame(size int) *Game {
-	m := maze.CreateMaze(size)
+	m := maze.CreateMaze(size, 2, 2)
 
 	// Example maze setup:
-	m.Grid[2][2].Type = maze.Treasure
 	m.Grid[0][4].Type = maze.Exit
 	m.Grid[3][1].Type = maze.Hospital
 	m.Grid[1][3].Type = maze.Dragon
 	m.Grid[2][4].Type = maze.Hole
+	m.Grid[0][0].Type = maze.Armory
 
 	// Internal walls
 	m.AddWall(1, 1, maze.Right)
@@ -87,18 +87,24 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 	}
 
 	target := g.Maze.Grid[nr][nc]
-	p.Row, p.Col = nr, nc
 
+	// Move player
+	p.Row, p.Col = nr, nc
 	status := p.ID + ": "
+	var treasure string
+
+	// Check if the player moves onto the treasure
+	if g.Maze.TreasureOnMap && nr == g.Maze.TreasureRow && nc == g.Maze.TreasureCol {
+		if p.Hurt {
+			treasure += " You found the treasure but can't pick it up because you are hurt!"
+		} else {
+			treasure += " You found the treasure!"
+			p.HasTreasure = true
+			g.Maze.TreasureOnMap = false
+		}
+	}
 
 	switch target.Type {
-	case maze.Treasure:
-		if p.Hurt {
-			status += "You're hurt and can't pick up the treasure."
-		} else {
-			p.HasTreasure = true
-			status += "You found the treasure!"
-		}
 	case maze.Exit:
 		if p.HasTreasure && !p.Hurt {
 			status += "You reached the exit with the treasure. You win!"
@@ -108,12 +114,28 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 			status += "You reached the exit but don't have the treasure."
 		}
 	case maze.Hole:
+		if p.HasTreasure {
+			// Drop treasure
+			g.Maze.TreasureRow = p.Row
+			g.Maze.TreasureCol = p.Col
+			g.Maze.TreasureOnMap = true
+			p.HasTreasure = false
+		}
 		p.Hurt = true
-		p.HasTreasure = false
 		status += "You fell into a hole, got hurt, and dropped the treasure."
 	case maze.Dragon:
+		if p.HasTreasure {
+			// Player carrying treasure steps on dragon => game over: dragon wins
+			return p.ID + ": You stepped on the dragon while carrying the treasure. The dragon wins! Game over."
+		}
+		if p.HasTreasure {
+			// Drop treasure
+			g.Maze.TreasureRow = p.Row
+			g.Maze.TreasureCol = p.Col
+			g.Maze.TreasureOnMap = true
+			p.HasTreasure = false
+		}
 		p.Hurt = true
-		p.HasTreasure = false
 		status += "The dragon burned you. You're hurt and dropped the treasure."
 	case maze.Hospital:
 		if p.Hurt {
@@ -122,11 +144,14 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 		} else {
 			status += "You visited the hospital, but you're already fine."
 		}
+	case maze.Armory:
+		p.Bullet = true
+		status += "You found an armory and received a bullet!"
 	default:
 		status += "You moved successfully."
 	}
 
-	return status
+	return status + treasure
 }
 
 func (g *Game) Shoot(dirStr string) string {
@@ -146,27 +171,36 @@ func (g *Game) Shoot(dirStr string) string {
 	for {
 		// Check if wall blocks shooting out of current cell
 		if m.Grid[r][c].Walls[dir] {
+			shooter.Bullet = false
 			return "Your bullet hit a wall and stopped."
 		}
 
 		// Move to next cell in direction
 		nr, nc := maze.Neighbor(r, c, dir)
 		if !m.InBounds(nr, nc) {
+			shooter.Bullet = false
 			return "Your bullet flew out of bounds."
 		}
 
-		// Check if a player is in next cell
+		// Check if a player is in the next cell
 		for _, p := range g.Players {
 			if p.Row == nr && p.Col == nc {
 				// Hit player
 				p.Hurt = true
-				p.HasTreasure = false
+
+				if p.HasTreasure {
+					p.HasTreasure = false
+					m.TreasureRow = p.Row
+					m.TreasureCol = p.Col
+					m.TreasureOnMap = true
+				}
+
 				shooter.Bullet = false
 				return fmt.Sprintf("You shot player %s! They are now hurt and dropped the treasure.", p.ID)
 			}
 		}
 
-		// No player hit, continue next cell
+		// No player hit, continue to next cell
 		r, c = nr, nc
 	}
 }

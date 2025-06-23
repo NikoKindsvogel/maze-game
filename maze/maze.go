@@ -7,12 +7,15 @@ type Cell struct {
 }
 
 type Maze struct {
-	Grid [][]*Cell
-	Size int
+	Size          int
+	Grid          [][]*Cell
+	TreasureRow   int
+	TreasureCol   int
+	TreasureOnMap bool
 }
 
 // CreateMaze initializes an empty maze with border walls
-func CreateMaze(size int) *Maze {
+func CreateMaze(size int, treasureRow, treasureCol int) *Maze {
 	grid := make([][]*Cell, size)
 	for r := 0; r < size; r++ {
 		grid[r] = make([]*Cell, size)
@@ -27,6 +30,10 @@ func CreateMaze(size int) *Maze {
 	}
 
 	m := &Maze{Grid: grid, Size: size}
+
+	m.TreasureRow = treasureCol
+	m.TreasureCol = treasureRow
+	m.TreasureOnMap = true
 
 	// Add border walls
 	for r := 0; r < size; r++ {

@@ -13,7 +13,7 @@ import (
 func RunCLI(g *game.Game) {
 	scanner := bufio.NewScanner(os.Stdin)
 
-	fmt.Println("Game started. Enter commands like: UP, DOWN, LEFT, RIGHT, SHOOT <direction> or SHOW")
+	fmt.Println("Game started. Enter commands like: UP, DOWN, LEFT, RIGHT, SHOOT <direction>, SHOW or EXIT")
 
 	for {
 		p := g.CurrentPlayer()
@@ -29,31 +29,54 @@ func RunCLI(g *game.Game) {
 		input := strings.TrimSpace(scanner.Text())
 		parts := strings.Fields(input)
 
+		var res string
+		var nextPlayer string
+
 		if len(parts) == 1 {
 			cmd := strings.ToUpper(parts[0])
-			if cmd == "SHOW" {
+
+			switch cmd {
+			case "SHOW":
 				ShowMap(g)
 				continue
+			case "EXIT":
+				fmt.Println("Exiting game.")
+				return
+			case "SKIP":
+				g.NextPlayer()
+				continue
+			case "UP", "DOWN", "LEFT", "RIGHT":
+				res, nextPlayer = g.PerformAction(cmd)
+			default:
+				fmt.Println("Unknown command. Use UP, DOWN, LEFT, RIGHT, SHOW, SHOOT <direction> or EXIT")
+				continue
 			}
-			res, nextPlayer := g.PerformAction(cmd)
-			fmt.Println(res)
-			fmt.Printf("Next turn: %s\n", nextPlayer)
-			continue
-		}
-
-		if len(parts) == 2 {
+		} else if len(parts) == 2 {
 			cmd := strings.ToUpper(parts[0])
 			dir := strings.ToUpper(parts[1])
 
 			if cmd == "SHOOT" && (dir == "UP" || dir == "DOWN" || dir == "LEFT" || dir == "RIGHT") {
-				res, nextPlayer := g.PerformAction(fmt.Sprintf("SHOOT %s", dir))
-				fmt.Println(res)
-				fmt.Printf("Next turn: %s\n", nextPlayer)
+				res, nextPlayer = g.PerformAction(fmt.Sprintf("SHOOT %s", dir))
+			} else {
+				fmt.Println("Invalid shoot command. Use SHOOT <UP|DOWN|LEFT|RIGHT>")
 				continue
 			}
+		} else {
+			fmt.Println("Invalid input. Use UP, DOWN, LEFT, RIGHT, SHOOT <direction>, SHOW or EXIT")
+			continue
 		}
 
-		fmt.Println("Invalid input. Use UP, DOWN, LEFT, RIGHT, SHOOT <direction> or SHOW")
+		fmt.Println(res)
+
+		// Check for game end conditions
+		lowerRes := strings.ToLower(res)
+		if strings.Contains(lowerRes, "game over") || strings.Contains(lowerRes, "you win") {
+			fmt.Println("Game ended.")
+			ShowMap(g)
+			break
+		}
+
+		fmt.Printf("Next turn: %s\n", nextPlayer)
 	}
 }
 
@@ -63,9 +86,9 @@ func ShowMap(g *game.Game) {
 	size := m.Size
 
 	// Print top boundary
-	fmt.Print(" ")
+	fmt.Print("+")
 	for c := 0; c < size; c++ {
-		fmt.Print(" ----")
+		fmt.Print("---+")
 	}
 	fmt.Println()
 
@@ -76,35 +99,50 @@ func ShowMap(g *game.Game) {
 		for c := 0; c < size; c++ {
 			cell := m.Grid[r][c]
 
-			// Player or cell char
-			playerStr := ""
+			// Determine cell content: player or treasure or cell type
+			cellChar := "   " // 3 spaces default
+
+			// Check for player in cell
 			for _, p := range players {
 				if p.Row == r && p.Col == c {
+					label := strings.ToUpper(p.ID)
 					if p.Hurt {
-						playerStr = strings.ToLower(p.ID) // e.g. "p1"
-					} else {
-						playerStr = p.ID // e.g. "P1"
+						label = strings.ToLower(label)
 					}
+					// Make sure label is exactly 3 chars, padded or trimmed
+					if len(label) > 3 {
+						label = label[:3]
+					} else {
+						label = fmt.Sprintf("%-3s", label)
+					}
+					cellChar = label
 					break
 				}
 			}
-			if playerStr == "" {
-				playerStr = cellChar(cell.Type) + "  " // pad to 3 chars width
-			} else {
-				// Pad player string to 3 chars width (e.g. "P1 ")
-				playerStr = fmt.Sprintf("%-3s", playerStr)
+
+			// If no player and treasure is here
+			if strings.TrimSpace(cellChar) == "" && m.TreasureOnMap && m.TreasureRow == r && m.TreasureCol == c {
+				cellChar = " T "
 			}
 
+			// If still empty, use cell symbol (single char) centered in 3 spaces
+			if strings.TrimSpace(cellChar) == "" {
+				sym := cellSymbol(cell.Type)
+				cellChar = fmt.Sprintf(" %s ", sym)
+			}
+
+			// Right wall
 			rightWall := " "
 			if cell.Walls[maze.Right] {
 				rightWall = "|"
 			}
 
-			line += " " + playerStr + rightWall
+			line += cellChar + rightWall
 
-			bottomWall := "    "
+			// Bottom wall (3 dashes or spaces)
+			bottomWall := "   "
 			if cell.Walls[maze.Down] {
-				bottomWall = "----"
+				bottomWall = "---"
 			}
 			bottomLine += bottomWall + "+"
 		}
@@ -113,29 +151,27 @@ func ShowMap(g *game.Game) {
 		fmt.Println(bottomLine)
 	}
 
-	// Print player info
+	// Player info summary (unchanged)
 	fmt.Println("\nPlayers:")
 	for _, p := range players {
-		hurtStatus := "Healthy"
+		id := p.ID
+		status := ""
 		if p.Hurt {
-			hurtStatus = "Hurt"
+			status += " (hurt)"
 		}
-		treasureStatus := "No Treasure"
 		if p.HasTreasure {
-			treasureStatus = "Has Treasure"
+			status += " (has treasure)"
 		}
-		bulletStatus := "No Bullet"
 		if p.Bullet {
-			bulletStatus = "Has Bullet"
+			status += " (has bullet)"
 		}
-		fmt.Printf("- %s: %s, %s, %s\n", p.ID, hurtStatus, treasureStatus, bulletStatus)
+		fmt.Printf("- %s%s\n", id, status)
 	}
 }
 
-func cellChar(t maze.CellType) string {
+// Helper for cell type
+func cellSymbol(t maze.CellType) string {
 	switch t {
-	case maze.Treasure:
-		return "T"
 	case maze.Hospital:
 		return "H"
 	case maze.Exit:
