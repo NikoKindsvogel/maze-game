@@ -25,6 +25,7 @@ func NewGame(size int) *Game {
 	m.Grid[3][1].Type = maze.Hospital
 	m.Grid[1][3].Type = maze.Dragon
 	m.Grid[2][4].Type = maze.Hole
+	m.Grid[6][1].Type = maze.Hole
 	m.Grid[0][0].Type = maze.Armory
 
 	// Internal walls
@@ -49,11 +50,13 @@ func (g *Game) PerformAction(cmd string) (string, string) {
 
 	var res string
 	var usedTurn bool
+	p := g.CurrentPlayer()
 
 	switch {
 	case cmd == "UP" || cmd == "DOWN" || cmd == "LEFT" || cmd == "RIGHT":
 		res = g.moveCurrentPlayerInDirection(cmd)
 		usedTurn = true
+
 	case strings.HasPrefix(cmd, "SHOOT "):
 		dir := strings.TrimPrefix(cmd, "SHOOT ")
 		res = g.Shoot(dir)
@@ -61,7 +64,14 @@ func (g *Game) PerformAction(cmd string) (string, string) {
 			usedTurn = false
 		} else {
 			usedTurn = true
+
+			// After a valid shot, check if standing on a hole
+			if g.Maze.Grid[p.Row][p.Col].Type == maze.Hole {
+				g.teleportPlayerFromHole(p)
+				res += " You shot and got teleported through the hole!"
+			}
 		}
+
 	default:
 		return "Unknown command.", g.CurrentPlayer().ID
 	}
@@ -82,6 +92,10 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 	p := g.CurrentPlayer()
 	cell := g.Maze.Grid[p.Row][p.Col]
 	if cell.Walls[dir] {
+		if cell.Type == maze.Hole {
+			g.teleportPlayerFromHole(p)
+			return p.ID + ": You hit a wall and got teleported through the hole!"
+		}
 		return p.ID + ": You hit a wall."
 	}
 
@@ -120,14 +134,8 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 			status += "You reached the exit but don't have the treasure."
 		}
 	case maze.Hole:
-		if p.HasTreasure {
-			g.Maze.TreasureRow = p.Row
-			g.Maze.TreasureCol = p.Col
-			g.Maze.TreasureOnMap = true
-			p.HasTreasure = false
-		}
-		p.Hurt = true
-		status += "You fell into a hole, got hurt, and dropped the treasure."
+		g.teleportPlayerFromHole(p)
+		status += "You fell into a hole and got teleported!"
 	case maze.Dragon:
 		if p.HasTreasure {
 			return p.ID + ": You stepped on the dragon while carrying the treasure. The dragon wins! Game over."
@@ -242,6 +250,44 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 		status += " " + strings.Join(visibilityMsgs, " ")
 	}
 	return status + treasure
+}
+
+func (g *Game) teleportPlayerFromHole(p *Player) {
+	size := g.Maze.Size
+	r0, c0 := p.Row, p.Col
+
+	// Collect all hole positions
+	type pos struct{ r, c int }
+	var holes []pos
+	for r := 0; r < size; r++ {
+		for c := 0; c < size; c++ {
+			if g.Maze.Grid[r][c].Type == maze.Hole {
+				holes = append(holes, pos{r, c})
+			}
+		}
+	}
+
+	// If less than 2 holes, do nothing
+	if len(holes) < 2 {
+		return
+	}
+
+	// Find index of current hole
+	current := -1
+	for i, h := range holes {
+		if h.r == r0 && h.c == c0 {
+			current = i
+			break
+		}
+	}
+
+	if current == -1 {
+		return // not currently on a hole (shouldn't happen)
+	}
+
+	// Teleport to next hole (clockwise in list)
+	next := (current + 1) % len(holes)
+	p.Row, p.Col = holes[next].r, holes[next].c
 }
 
 func (g *Game) Shoot(dirStr string) string {
