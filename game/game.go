@@ -11,9 +11,10 @@ import (
 )
 
 type Game struct {
-	Maze    *maze.Maze
-	Players []*Player
-	current int // index of current player's turn
+	Maze                   *maze.Maze
+	Players                []*Player
+	current                int
+	ShowVisibilityMessages bool
 }
 
 func NewGame(size int) *Game {
@@ -36,9 +37,10 @@ func NewGame(size int) *Game {
 	}
 
 	return &Game{
-		Maze:    m,
-		Players: players,
-		current: 0,
+		Maze:                   m,
+		Players:                players,
+		current:                0,
+		ShowVisibilityMessages: true,
 	}
 }
 
@@ -78,7 +80,6 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 	}
 
 	p := g.CurrentPlayer()
-
 	cell := g.Maze.Grid[p.Row][p.Col]
 	if cell.Walls[dir] {
 		return p.ID + ": You hit a wall."
@@ -88,6 +89,8 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 	if !g.Maze.InBounds(nr, nc) {
 		return p.ID + ": Out of bounds."
 	}
+
+	var visibilityMsgs []string
 
 	target := g.Maze.Grid[nr][nc]
 
@@ -118,7 +121,6 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 		}
 	case maze.Hole:
 		if p.HasTreasure {
-			// Drop treasure
 			g.Maze.TreasureRow = p.Row
 			g.Maze.TreasureCol = p.Col
 			g.Maze.TreasureOnMap = true
@@ -128,11 +130,9 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 		status += "You fell into a hole, got hurt, and dropped the treasure."
 	case maze.Dragon:
 		if p.HasTreasure {
-			// Player carrying treasure steps on dragon => game over: dragon wins
 			return p.ID + ": You stepped on the dragon while carrying the treasure. The dragon wins! Game over."
 		}
 		if p.HasTreasure {
-			// Drop treasure
 			g.Maze.TreasureRow = p.Row
 			g.Maze.TreasureCol = p.Col
 			g.Maze.TreasureOnMap = true
@@ -154,6 +154,93 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 		status += "You moved successfully."
 	}
 
+	// Dragon visibility (4 directions)
+	for r := p.Row - 1; r >= 0; r-- {
+		cell := g.Maze.Grid[r][p.Col]
+		if g.Maze.Grid[r+1][p.Col].Walls[maze.Up] {
+			break
+		}
+		if cell.Type == maze.Dragon {
+			visibilityMsgs = append(visibilityMsgs, "The dragon sees you!")
+			break
+		}
+	}
+	for r := p.Row + 1; r < g.Maze.Size; r++ {
+		cell := g.Maze.Grid[r][p.Col]
+		if g.Maze.Grid[r-1][p.Col].Walls[maze.Down] {
+			break
+		}
+		if cell.Type == maze.Dragon {
+			visibilityMsgs = append(visibilityMsgs, "The dragon sees you!")
+			break
+		}
+	}
+	for c := p.Col - 1; c >= 0; c-- {
+		cell := g.Maze.Grid[p.Row][c]
+		if g.Maze.Grid[p.Row][c+1].Walls[maze.Left] {
+			break
+		}
+		if cell.Type == maze.Dragon {
+			visibilityMsgs = append(visibilityMsgs, "The dragon sees you!")
+			break
+		}
+	}
+	for c := p.Col + 1; c < g.Maze.Size; c++ {
+		cell := g.Maze.Grid[p.Row][c]
+		if g.Maze.Grid[p.Row][c-1].Walls[maze.Right] {
+			break
+		}
+		if cell.Type == maze.Dragon {
+			visibilityMsgs = append(visibilityMsgs, "The dragon sees you!")
+			break
+		}
+	}
+
+	if g.ShowVisibilityMessages {
+		// Treasure visibility (if on map)
+		if g.Maze.TreasureOnMap {
+			for r := p.Row - 1; r >= 0; r-- {
+				if g.Maze.Grid[r+1][p.Col].Walls[maze.Up] {
+					break
+				}
+				if r == g.Maze.TreasureRow && p.Col == g.Maze.TreasureCol {
+					visibilityMsgs = append(visibilityMsgs, "You see the treasure!")
+					break
+				}
+			}
+			for r := p.Row + 1; r < g.Maze.Size; r++ {
+				if g.Maze.Grid[r-1][p.Col].Walls[maze.Down] {
+					break
+				}
+				if r == g.Maze.TreasureRow && p.Col == g.Maze.TreasureCol {
+					visibilityMsgs = append(visibilityMsgs, "You see the treasure!")
+					break
+				}
+			}
+			for c := p.Col - 1; c >= 0; c-- {
+				if g.Maze.Grid[p.Row][c+1].Walls[maze.Left] {
+					break
+				}
+				if p.Row == g.Maze.TreasureRow && c == g.Maze.TreasureCol {
+					visibilityMsgs = append(visibilityMsgs, "You see the treasure!")
+					break
+				}
+			}
+			for c := p.Col + 1; c < g.Maze.Size; c++ {
+				if g.Maze.Grid[p.Row][c-1].Walls[maze.Right] {
+					break
+				}
+				if p.Row == g.Maze.TreasureRow && c == g.Maze.TreasureCol {
+					visibilityMsgs = append(visibilityMsgs, "You see the treasure!")
+					break
+				}
+			}
+		}
+	}
+
+	if len(visibilityMsgs) > 0 {
+		status += " " + strings.Join(visibilityMsgs, " ")
+	}
 	return status + treasure
 }
 
