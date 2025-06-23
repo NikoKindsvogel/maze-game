@@ -36,6 +36,34 @@ func RunCLI(g *game.Game) {
 			cmd := strings.ToUpper(parts[0])
 
 			switch cmd {
+			case "SAVE":
+				fmt.Print("Enter filename to save: ")
+				if !scanner.Scan() {
+					break
+				}
+				saveFile := scanner.Text()
+				if err := g.SaveToFile(saveFile); err != nil {
+					fmt.Println("Error saving game:", err)
+				} else {
+					fmt.Println("Game saved.")
+				}
+				continue
+
+			case "LOAD":
+				fmt.Print("Enter filename to load: ")
+				if !scanner.Scan() {
+					break
+				}
+				loadFile := scanner.Text()
+				newGame, err := game.LoadFromFile(loadFile)
+				if err != nil {
+					fmt.Println("Error loading game:", err)
+				} else {
+					*g = *newGame
+					fmt.Println("Game loaded.")
+					ShowMap(g)
+				}
+				continue
 			case "SHOW":
 				ShowMap(g)
 				continue

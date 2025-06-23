@@ -1,7 +1,10 @@
 package game
 
 import (
+	"encoding/gob"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"maze-game/maze"
@@ -234,4 +237,32 @@ func (g *Game) GetMaze() *maze.Maze {
 
 func (g *Game) GetPlayers() []*Player {
 	return g.Players
+}
+
+func (g *Game) SaveToFile(filename string) error {
+	// Ensure the save directory exists
+	if err := os.MkdirAll("saved", 0755); err != nil {
+		return err
+	}
+	file, err := os.Create(filepath.Join("saved", filename))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := gob.NewEncoder(file)
+	return encoder.Encode(g)
+}
+
+func LoadFromFile(filename string) (*Game, error) {
+	file, err := os.Open(filepath.Join("saved", filename))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var g Game
+	decoder := gob.NewDecoder(file)
+	err = decoder.Decode(&g)
+	return &g, err
 }
