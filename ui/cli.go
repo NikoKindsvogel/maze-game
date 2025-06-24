@@ -155,7 +155,7 @@ func ShowMap(g *game.Game) {
 
 			// If still empty, use cell symbol (single char) centered in 3 spaces
 			if strings.TrimSpace(cellChar) == "" {
-				sym := cellSymbol(cell.Type)
+				sym := cellSymbol(*cell)
 				cellChar = fmt.Sprintf(" %s ", sym)
 			}
 
@@ -198,8 +198,8 @@ func ShowMap(g *game.Game) {
 }
 
 // Helper for cell type
-func cellSymbol(t maze.CellType) string {
-	switch t {
+func cellSymbol(cell maze.Cell) string {
+	switch cell.Type {
 	case maze.Hospital:
 		return "H"
 	case maze.Exit:
@@ -210,6 +210,21 @@ func cellSymbol(t maze.CellType) string {
 		return "O"
 	case maze.Armory:
 		return "A"
+	case maze.River:
+		switch cell.RiverDir {
+		case maze.Up:
+			return "↑"
+		case maze.Down:
+			return "↓"
+		case maze.Left:
+			return "←"
+		case maze.Right:
+			return "→"
+		default:
+			return "~" // fallback
+		}
+	case maze.Estuary:
+		return "~"
 	default:
 		return "."
 	}

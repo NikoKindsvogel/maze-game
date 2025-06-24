@@ -7,6 +7,7 @@ const (
 	Wall
 	Hole
 	River
+	Estuary
 	Exit
 	Hospital
 	Armory

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"maze-game/maze"
+	"maze-game/mazegen"
 )
 
 type Game struct {
@@ -15,26 +16,26 @@ type Game struct {
 	Players                []*Player
 	current                int
 	ShowVisibilityMessages bool
+	RiverMoveLength        int
 }
 
-func NewGame(size int) *Game {
-	m := maze.CreateMaze(size, 2, 2)
+func NewGame() *Game {
+	var size int = 7
+	cfg := mazegen.MazeConfig{
+		Size:          size,
+		NumHoles:      2,
+		NumArmories:   1,
+		NumHospitals:  1,
+		NumDragons:    1,
+		RiverLength:   size - 1,
+		ExtraOpenings: size * 3,
+	}
 
-	// Example maze setup:
-	m.Grid[0][4].Type = maze.Exit
-	m.Grid[3][1].Type = maze.Hospital
-	m.Grid[1][3].Type = maze.Dragon
-	m.Grid[2][4].Type = maze.Hole
-	m.Grid[6][1].Type = maze.Hole
-	m.Grid[0][0].Type = maze.Armory
-
-	// Internal walls
-	m.AddWall(1, 1, maze.Right)
-	m.AddWall(2, 3, maze.Down)
+	m := mazegen.GenerateMaze(cfg)
 
 	players := []*Player{
-		{ID: "P1", Row: 1, Col: 1, Hurt: false, Bullet: true},
-		{ID: "P2", Row: 4, Col: 4, Hurt: false, Bullet: true},
+		{ID: "P1", Row: 0, Col: 0},
+		{ID: "P2", Row: size - 1, Col: size - 1},
 	}
 
 	return &Game{
@@ -42,6 +43,7 @@ func NewGame(size int) *Game {
 		Players:                players,
 		current:                0,
 		ShowVisibilityMessages: true,
+		RiverMoveLength:        2,
 	}
 }
 
@@ -158,6 +160,11 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 	case maze.Armory:
 		p.Bullet = true
 		status += "You found an armory and received a bullet!"
+	case maze.River:
+		status += "You stepped into a river. "
+		status += g.moveAlongRiver(p)
+	case maze.Estuary:
+		status += "You stepped directly on the estuary."
 	default:
 		status += "You moved successfully."
 	}
@@ -252,6 +259,28 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 	return status + treasure
 }
 
+func (g *Game) moveAlongRiver(p *Player) string {
+	for i := 0; i < g.RiverMoveLength; i++ {
+		cell := g.Maze.Grid[p.Row][p.Col]
+		if cell.Type == maze.Estuary {
+			return "You arrived at the estuary."
+		}
+		dir := cell.RiverDir
+		if cell.Walls[dir] {
+			break
+		}
+		nr, nc := maze.Neighbor(p.Row, p.Col, dir)
+		if !g.Maze.InBounds(nr, nc) {
+			break
+		}
+		p.Row, p.Col = nr, nc
+		cell = g.Maze.Grid[p.Row][p.Col]
+		if cell.Type == maze.Estuary {
+			return "You arrived at the estuary."
+		}
+	}
+	return ""
+}
 func (g *Game) teleportPlayerFromHole(p *Player) {
 	size := g.Maze.Size
 	r0, c0 := p.Row, p.Col

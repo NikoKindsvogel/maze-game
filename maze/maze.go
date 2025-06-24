@@ -1,9 +1,9 @@
 package maze
 
 type Cell struct {
-	Row, Col int
-	Walls    map[Direction]bool // true means wall exists in that direction
 	Type     CellType
+	Walls    map[Direction]bool
+	RiverDir Direction // Only used if Type == River
 }
 
 type Maze struct {
@@ -21,19 +21,13 @@ func CreateMaze(size int, treasureRow, treasureCol int) *Maze {
 		grid[r] = make([]*Cell, size)
 		for c := 0; c < size; c++ {
 			grid[r][c] = &Cell{
-				Row:   r,
-				Col:   c,
-				Walls: map[Direction]bool{Up: false, Right: false, Down: false, Left: false},
+				Walls: map[Direction]bool{Up: true, Right: true, Down: true, Left: true},
 				Type:  Empty,
 			}
 		}
 	}
 
 	m := &Maze{Grid: grid, Size: size}
-
-	m.TreasureRow = treasureCol
-	m.TreasureCol = treasureRow
-	m.TreasureOnMap = true
 
 	// Add border walls
 	for r := 0; r < size; r++ {
@@ -76,4 +70,41 @@ func Neighbor(r, c int, dir Direction) (int, int) {
 		return r, c + 1
 	}
 	return r, c
+}
+
+func Delta(dir Direction) (int, int) {
+	switch dir {
+	case Up:
+		return -1, 0
+	case Down:
+		return 1, 0
+	case Left:
+		return 0, -1
+	case Right:
+		return 0, 1
+	default:
+		return 0, 0
+	}
+}
+
+func DirectionFromDelta(dr, dc int) Direction {
+	switch {
+	case dr == -1 && dc == 0:
+		return Up
+	case dr == 1 && dc == 0:
+		return Down
+	case dr == 0 && dc == -1:
+		return Left
+	case dr == 0 && dc == 1:
+		return Right
+	}
+	return Up // Default fallback
+}
+
+func (m *Maze) RemoveWallBetween(r, c int, dir Direction) {
+	m.Grid[r][c].Walls[dir] = false
+	nr, nc := Neighbor(r, c, dir)
+	if m.InBounds(nr, nc) {
+		m.Grid[nr][nc].Walls[Opposite(dir)] = false
+	}
 }
