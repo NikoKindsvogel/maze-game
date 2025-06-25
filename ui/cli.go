@@ -8,7 +8,6 @@ import (
 
 	"maze-game/game"
 	"maze-game/maze"
-	"maze-game/mazegen"
 )
 
 func RunCLI(g *game.Game) {
@@ -68,20 +67,7 @@ func RunCLI(g *game.Game) {
 				continue
 			case "REGEN":
 				fmt.Print("Regenerating maze... ")
-				var size int = 7
-				cfg := mazegen.MazeConfig{
-					Size:                    size,
-					NumHoles:                2,
-					NumArmories:             1,
-					NumHospitals:            1,
-					NumDragons:              1,
-					RiverLength:             size - 1,
-					ExtraOpenings:           size * 3,
-					MinTreasureExitDistance: size - 2,
-				}
-				newMaze := mazegen.GenerateMaze(cfg)
-				g.Players = game.PlacePlayers(newMaze, len(g.Players))
-				g.Maze = newMaze
+				g = game.NewGame()
 				fmt.Println("Maze regenerated.")
 				ShowMap(g)
 				continue

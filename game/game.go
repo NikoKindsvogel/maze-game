@@ -28,13 +28,21 @@ func NewGame() *Game {
 		NumHospitals:            1,
 		NumDragons:              1,
 		RiverLength:             size - 1,
-		ExtraOpenings:           size * 3,
+		ExtraOpenings:           size,
 		MinTreasureExitDistance: size - 2,
 	}
 
-	m := mazegen.GenerateMaze(cfg)
+	var m *maze.Maze
+	var players []*Player
 
-	players := PlacePlayers(m, 2)
+	for {
+		m = mazegen.GenerateMaze(cfg)
+		players = PlacePlayers(m, 2)
+
+		if AllPlayersCanReachTreasureAndExit(m, players) {
+			break
+		}
+	}
 
 	return &Game{
 		Maze:                   m,
@@ -399,6 +407,10 @@ func (g *Game) GetPlayers() []*Player {
 	return g.Players
 }
 
+func (g *Game) GetCurrent() int {
+	return g.current
+}
+
 func (g *Game) SaveToFile(filename string) error {
 	// Ensure the save directory exists
 	if err := os.MkdirAll("saved", 0755); err != nil {
@@ -425,4 +437,26 @@ func LoadFromFile(filename string) (*Game, error) {
 	decoder := gob.NewDecoder(file)
 	err = decoder.Decode(&g)
 	return &g, err
+}
+
+func (g *Game) Copy() *Game {
+	// Deep copy players
+	playersCopy := make([]*Player, len(g.Players))
+	for i, p := range g.Players {
+		playersCopy[i] = &Player{
+			ID:     p.ID,
+			Row:    p.Row,
+			Col:    p.Col,
+			Hurt:   p.Hurt,
+			Bullet: p.Bullet,
+		}
+	}
+
+	return &Game{
+		Maze:                   g.Maze, // shared (read-only)
+		Players:                playersCopy,
+		current:                g.current,
+		ShowVisibilityMessages: false, // suppress output during sim
+		RiverMoveLength:        g.RiverMoveLength,
+	}
 }

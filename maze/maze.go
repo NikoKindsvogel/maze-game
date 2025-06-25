@@ -108,3 +108,14 @@ func (m *Maze) RemoveWallBetween(r, c int, dir Direction) {
 		m.Grid[nr][nc].Walls[Opposite(dir)] = false
 	}
 }
+
+func FindExit(m *Maze) (row, col int, found bool) {
+	for r := 0; r < m.Size; r++ {
+		for c := 0; c < m.Size; c++ {
+			if m.Grid[r][c].Type == Exit {
+				return r, c, true
+			}
+		}
+	}
+	return 0, 0, false
+}

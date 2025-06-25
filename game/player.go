@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"maze-game/maze"
 )
@@ -41,4 +42,107 @@ func PlacePlayers(m *maze.Maze, count int) []*Player {
 	}
 
 	return players
+}
+
+func CanReachUsingActions(g *Game, startRow, startCol, targetRow, targetCol int) bool {
+
+	startState := &Game{
+		Maze: g.Maze,
+		Players: []*Player{{
+			ID:     g.CurrentPlayer().ID,
+			Row:    startRow,
+			Col:    startCol,
+			Hurt:   g.CurrentPlayer().Hurt,
+			Bullet: g.CurrentPlayer().Bullet,
+		}},
+		current:                0,
+		ShowVisibilityMessages: false,
+		RiverMoveLength:        g.RiverMoveLength,
+	}
+
+	stack := []*Game{startState}
+	visited := make(map[[2]int]bool)
+
+	for len(stack) > 0 {
+		current := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		p := current.CurrentPlayer()
+		pos := [2]int{p.Row, p.Col}
+
+		if pos == [2]int{targetRow, targetCol} {
+			return true
+		}
+
+		if visited[pos] {
+			continue
+		}
+		visited[pos] = true
+
+		for _, dir := range []string{"UP", "DOWN", "LEFT", "RIGHT"} {
+			nextGame := current.Copy()
+			res, _ := nextGame.PerformAction(dir)
+
+			// Filter invalid moves
+			if strings.Contains(res, "can't") || strings.Contains(strings.ToLower(res), "invalid") {
+				continue
+			}
+
+			stack = append(stack, nextGame)
+		}
+	}
+
+	return false
+}
+
+func AllPlayersCanReachTreasureAndExit(m *maze.Maze, players []*Player) bool {
+	// Save original treasure position
+	treasureRow, treasureCol := m.TreasureRow, m.TreasureCol
+
+	// Find exit position
+	exitRow, exitCol, found := maze.FindExit(m)
+	if !found {
+		return false
+	}
+
+	for _, p := range players {
+		// Create a temporary game instance with a deep copy of the player
+		tempPlayer := &Player{
+			ID:     p.ID,
+			Row:    p.Row,
+			Col:    p.Col,
+			Hurt:   p.Hurt,
+			Bullet: p.Bullet,
+		}
+		tempGame := &Game{
+			Maze:                   m,
+			Players:                []*Player{tempPlayer},
+			current:                0,
+			ShowVisibilityMessages: false,
+			RiverMoveLength:        2,
+		}
+
+		// Step 1: Check if the player can reach the treasure
+		if !CanReachUsingActions(tempGame, tempPlayer.Row, tempPlayer.Col, treasureRow, treasureCol) {
+			return false
+		}
+
+		// Move player to treasure and restore treasure position
+		tempPlayer.Row = treasureRow
+		tempPlayer.Col = treasureCol
+		m.TreasureRow = treasureRow
+		m.TreasureCol = treasureCol
+		m.TreasureOnMap = true
+
+		// Step 2: Check if the player can reach the exit from the treasure
+		if !CanReachUsingActions(tempGame, treasureRow, treasureCol, exitRow, exitCol) {
+			return false
+		}
+
+		// Restore treasure position in case any render/state logic depends on it
+		m.TreasureRow = treasureRow
+		m.TreasureCol = treasureCol
+		m.TreasureOnMap = true
+	}
+
+	return true
 }
