@@ -68,7 +68,7 @@ func RunCLI(g *game.Game) {
 				continue
 			case "REGEN":
 				fmt.Print("Regenerating maze... ")
-				var size int = 5
+				var size int = 7
 				cfg := mazegen.MazeConfig{
 					Size:                    size,
 					NumHoles:                2,
@@ -80,6 +80,7 @@ func RunCLI(g *game.Game) {
 					MinTreasureExitDistance: size - 2,
 				}
 				newMaze := mazegen.GenerateMaze(cfg)
+				g.Players = game.PlacePlayers(newMaze, len(g.Players))
 				g.Maze = newMaze
 				fmt.Println("Maze regenerated.")
 				ShowMap(g)
