@@ -33,10 +33,7 @@ func NewGame() *Game {
 
 	m := mazegen.GenerateMaze(cfg)
 
-	players := []*Player{
-		{ID: "P1", Row: 0, Col: 0},
-		{ID: "P2", Row: size - 1, Col: size - 1},
-	}
+	players := PlacePlayers(m, 4)
 
 	return &Game{
 		Maze:                   m,
