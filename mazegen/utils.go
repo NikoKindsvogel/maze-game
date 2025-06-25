@@ -41,11 +41,43 @@ func placeRandomCellOfType(m *maze.Maze, t maze.CellType) {
 	}
 }
 
-func placeTreasure(m *maze.Maze) {
-	for {
+func placeTreasure(m *maze.Maze, minDist int) {
+	type point struct{ r, c int }
+
+	var exit point
+	found := false
+	for r := 0; r < m.Size && !found; r++ {
+		for c := 0; c < m.Size; c++ {
+			if m.Grid[r][c].Type == maze.Exit {
+				exit = point{r, c}
+				found = true
+				break
+			}
+		}
+	}
+
+	if !found {
+		// fallback: no exit found, place treasure randomly
+		for {
+			r := rand.Intn(m.Size)
+			c := rand.Intn(m.Size)
+			if m.Grid[r][c].Type == maze.Empty {
+				m.TreasureRow = r
+				m.TreasureCol = c
+				m.TreasureOnMap = true
+				return
+			}
+		}
+	}
+
+	// Find a valid position at least minDist away from the exit
+	for tries := 0; tries < 1000; tries++ {
 		r := rand.Intn(m.Size)
 		c := rand.Intn(m.Size)
-		if m.Grid[r][c].Type == maze.Empty {
+
+		if m.Grid[r][c].Type == maze.Empty &&
+			abs(r-exit.r)+abs(c-exit.c) >= minDist {
+
 			m.TreasureRow = r
 			m.TreasureCol = c
 			m.TreasureOnMap = true
@@ -54,34 +86,11 @@ func placeTreasure(m *maze.Maze) {
 	}
 }
 
-func placeRiver(m *maze.Maze, length int, dir maze.Direction) {
-	for attempts := 0; attempts < 100; attempts++ {
-		r := rand.Intn(m.Size)
-		c := rand.Intn(m.Size)
-		ok := true
-		path := make([][2]int, 0, length)
-		for i := 0; i < length; i++ {
-			if !m.InBounds(r, c) || m.Grid[r][c].Type != maze.Empty {
-				ok = false
-				break
-			}
-			path = append(path, [2]int{r, c})
-			dr, dc := maze.Delta(dir)
-			r += dr
-			c += dc
-		}
-		if ok {
-			for i, pos := range path {
-				r, c := pos[0], pos[1]
-				m.Grid[r][c].Type = maze.River
-				m.Grid[r][c].RiverDir = dir
-				if i == len(path)-1 {
-					m.Grid[r][c].Type = maze.Estuary
-				}
-			}
-			return
-		}
+func abs(n int) int {
+	if n < 0 {
+		return -n
 	}
+	return n
 }
 
 func openUpMaze(m *maze.Maze, extraOpenings int) {

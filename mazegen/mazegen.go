@@ -12,13 +12,14 @@ func init() {
 }
 
 type MazeConfig struct {
-	Size          int
-	NumHoles      int
-	NumArmories   int
-	NumHospitals  int
-	NumDragons    int
-	RiverLength   int
-	ExtraOpenings int
+	Size                    int
+	NumHoles                int
+	NumArmories             int
+	NumHospitals            int
+	NumDragons              int
+	RiverLength             int
+	ExtraOpenings           int
+	MinTreasureExitDistance int
 }
 
 // GenerateMaze creates a solvable maze with given features.
@@ -28,7 +29,6 @@ func GenerateMaze(cfg MazeConfig) *maze.Maze {
 	openUpMaze(m, cfg.ExtraOpenings)
 
 	placeRandomCellOfType(m, maze.Exit)
-	placeTreasure(m)
 
 	for i := 0; i < cfg.NumHoles; i++ {
 		placeRandomCellOfType(m, maze.Hole)
@@ -42,6 +42,8 @@ func GenerateMaze(cfg MazeConfig) *maze.Maze {
 	for i := 0; i < cfg.NumDragons; i++ {
 		placeRandomCellOfType(m, maze.Dragon)
 	}
+
+	placeTreasure(m, cfg.MinTreasureExitDistance)
 
 	placeSmartRiver(m, cfg.RiverLength)
 

@@ -22,18 +22,19 @@ type Game struct {
 func NewGame() *Game {
 	var size int = 7
 	cfg := mazegen.MazeConfig{
-		Size:          size,
-		NumHoles:      2,
-		NumArmories:   1,
-		NumHospitals:  1,
-		NumDragons:    1,
-		RiverLength:   size - 1,
-		ExtraOpenings: size * 3,
+		Size:                    size,
+		NumHoles:                2,
+		NumArmories:             1,
+		NumHospitals:            1,
+		NumDragons:              1,
+		RiverLength:             size - 1,
+		ExtraOpenings:           size * 3,
+		MinTreasureExitDistance: size - 2,
 	}
 
 	m := mazegen.GenerateMaze(cfg)
 
-	players := PlacePlayers(m, 4)
+	players := PlacePlayers(m, 2)
 
 	return &Game{
 		Maze:                   m,
