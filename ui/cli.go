@@ -8,12 +8,14 @@ import (
 
 	"maze-game/game"
 	"maze-game/maze"
+	"maze-game/mazegen"
 )
 
 func RunCLI(g *game.Game) {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Println("Game started. Enter commands like: UP, DOWN, LEFT, RIGHT, SHOOT <direction>, SHOW or EXIT")
+	ShowMap(g)
 
 	for {
 		p := g.CurrentPlayer()
@@ -63,6 +65,24 @@ func RunCLI(g *game.Game) {
 					fmt.Println("Game loaded.")
 					ShowMap(g)
 				}
+				continue
+			case "REGEN":
+				fmt.Print("Regenerating maze... ")
+				var size int = 5
+				cfg := mazegen.MazeConfig{
+					Size:                    size,
+					NumHoles:                2,
+					NumArmories:             1,
+					NumHospitals:            1,
+					NumDragons:              1,
+					RiverLength:             size - 1,
+					ExtraOpenings:           size * 3,
+					MinTreasureExitDistance: size - 2,
+				}
+				newMaze := mazegen.GenerateMaze(cfg)
+				g.Maze = newMaze
+				fmt.Println("Maze regenerated.")
+				ShowMap(g)
 				continue
 			case "SHOW":
 				ShowMap(g)

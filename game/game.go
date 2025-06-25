@@ -20,7 +20,7 @@ type Game struct {
 }
 
 func NewGame() *Game {
-	var size int = 7
+	var size int = 5
 	cfg := mazegen.MazeConfig{
 		Size:                    size,
 		NumHoles:                2,
