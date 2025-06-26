@@ -39,7 +39,7 @@ func NewGame() *Game {
 		m = mazegen.GenerateMaze(cfg)
 		players = PlacePlayers(m, 2)
 
-		if AllPlayersCanReachTreasureAndExit(m, players) && CanReachTreasureFromEstuary(m, m.TreasureRow, m.TreasureCol) {
+		if AllPlayersCanReachTreasureAndExit(m, players) && CanReachTreasureFromEstuary(m, m.TreasureRow, m.TreasureCol) && HospitalReachableFromExit(m) {
 			break
 		}
 	}

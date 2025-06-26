@@ -199,3 +199,78 @@ func CanReachTreasureFromEstuary(m *maze.Maze, treasureRow, treasureCol int) boo
 		return false
 	}
 }
+
+func HospitalReachableFromExit(m *maze.Maze) bool {
+	treasureRow := m.TreasureRow
+	treasureCol := m.TreasureCol
+	exitRow, exitCol, exitFound := maze.FindExit(m)
+	if !exitFound {
+		return false
+	}
+
+	// Find the hospital
+	var hospitalRow, hospitalCol int
+	hospitalFound := false
+	for r := 0; r < m.Size; r++ {
+		for c := 0; c < m.Size; c++ {
+			if m.Grid[r][c].Type == maze.Hospital {
+				hospitalRow = r
+				hospitalCol = c
+				hospitalFound = true
+				break
+			}
+		}
+		if hospitalFound {
+			break
+		}
+	}
+	if !hospitalFound {
+		return false
+	}
+
+	// Create a test player starting at exit
+	exitPlayer := &Player{
+		ID:     "HospitalTester",
+		Row:    exitRow,
+		Col:    exitCol,
+		Hurt:   false,
+		Bullet: true,
+	}
+	gameFromExit := &Game{
+		Maze:                   m,
+		Players:                []*Player{exitPlayer},
+		current:                0,
+		ShowVisibilityMessages: false,
+		RiverMoveLength:        2,
+	}
+
+	// Check exit -> hospital
+	if !CanReachUsingActions(gameFromExit, exitRow, exitCol, hospitalRow, hospitalCol) {
+		return false
+	}
+
+	// Now check hospital -> exit
+	hospitalPlayer := &Player{
+		ID:     "HospitalTester2",
+		Row:    hospitalRow,
+		Col:    hospitalCol,
+		Hurt:   false,
+		Bullet: true,
+	}
+	gameFromHospital := &Game{
+		Maze:                   m,
+		Players:                []*Player{hospitalPlayer},
+		current:                0,
+		ShowVisibilityMessages: false,
+		RiverMoveLength:        2,
+	}
+
+	if !CanReachUsingActions(gameFromHospital, hospitalRow, hospitalCol, exitRow, exitCol) {
+		m.TreasureRow = treasureRow
+		m.TreasureCol = treasureCol
+		m.TreasureOnMap = true
+		return false
+	}
+
+	return true
+}
