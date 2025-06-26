@@ -145,11 +145,57 @@ func AllPlayersCanReachTreasureAndExit(m *maze.Maze, players []*Player) bool {
 			return false
 		}
 
-		// Restore treasure position in case any render/state logic depends on it
 		m.TreasureRow = treasureRow
 		m.TreasureCol = treasureCol
 		m.TreasureOnMap = true
 	}
 
 	return true
+}
+
+func CanReachTreasureFromEstuary(m *maze.Maze, treasureRow, treasureCol int) bool {
+	// Find the estuary tile
+	var estuaryRow, estuaryCol int
+	found := false
+	for r := 0; r < m.Size; r++ {
+		for c := 0; c < m.Size; c++ {
+			if m.Grid[r][c].Type == maze.Estuary {
+				estuaryRow = r
+				estuaryCol = c
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+	if !found {
+		return false
+	}
+
+	// Create a game with a single player starting on the estuary
+	player := &Player{
+		ID:     "RiverTester",
+		Row:    estuaryRow,
+		Col:    estuaryCol,
+		Hurt:   false,
+		Bullet: true,
+	}
+	g := &Game{
+		Maze:                   m,
+		Players:                []*Player{player},
+		current:                0,
+		ShowVisibilityMessages: false,
+		RiverMoveLength:        2,
+	}
+
+	if CanReachUsingActions(g, estuaryRow, estuaryCol, treasureRow, treasureCol) {
+		m.TreasureRow = treasureRow
+		m.TreasureCol = treasureCol
+		m.TreasureOnMap = true
+		return true
+	} else {
+		return false
+	}
 }
