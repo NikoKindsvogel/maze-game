@@ -45,7 +45,6 @@ func PlacePlayers(m *maze.Maze, count int) []*Player {
 }
 
 func CanReachUsingActions(g *Game, startRow, startCol, targetRow, targetCol int) bool {
-
 	startState := &Game{
 		Maze: g.Maze,
 		Players: []*Player{{
@@ -82,8 +81,16 @@ func CanReachUsingActions(g *Game, startRow, startCol, targetRow, targetCol int)
 			nextGame := current.Copy()
 			res, _ := nextGame.PerformAction(dir)
 
-			// Filter invalid moves
+			// Skip if move was invalid
 			if strings.Contains(res, "can't") || strings.Contains(strings.ToLower(res), "invalid") {
+				continue
+			}
+
+			np := nextGame.CurrentPlayer()
+			cell := nextGame.Maze.Grid[np.Row][np.Col]
+
+			// Skip if new cell is a dragon
+			if cell.Type == maze.Dragon {
 				continue
 			}
 
