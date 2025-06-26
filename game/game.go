@@ -28,7 +28,7 @@ func NewGame() *Game {
 		NumHospitals:            1,
 		NumDragons:              1,
 		RiverLength:             size - 1,
-		ExtraOpenings:           size,
+		ExtraOpenings:           0,
 		MinTreasureExitDistance: size - 2,
 	}
 

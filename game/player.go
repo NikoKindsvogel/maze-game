@@ -266,11 +266,12 @@ func HospitalReachableFromExit(m *maze.Maze) bool {
 	}
 
 	if !CanReachUsingActions(gameFromHospital, hospitalRow, hospitalCol, exitRow, exitCol) {
+		return false
+	} else {
 		m.TreasureRow = treasureRow
 		m.TreasureCol = treasureCol
 		m.TreasureOnMap = true
-		return false
+		return true
 	}
 
-	return true
 }
