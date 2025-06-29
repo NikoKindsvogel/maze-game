@@ -119,3 +119,31 @@ func FindExit(m *Maze) (row, col int, found bool) {
 	}
 	return 0, 0, false
 }
+
+func CopyMaze(original *Maze) *Maze {
+	copyGrid := make([][]*Cell, original.Size)
+	for r := 0; r < original.Size; r++ {
+		copyGrid[r] = make([]*Cell, original.Size)
+		for c := 0; c < original.Size; c++ {
+			origCell := original.Grid[r][c]
+			copyWalls := make(map[Direction]bool)
+			for dir, hasWall := range origCell.Walls {
+				copyWalls[dir] = hasWall
+			}
+
+			copyGrid[r][c] = &Cell{
+				Type:     origCell.Type,
+				Walls:    copyWalls,
+				RiverDir: origCell.RiverDir,
+			}
+		}
+	}
+
+	return &Maze{
+		Size:          original.Size,
+		Grid:          copyGrid,
+		TreasureRow:   original.TreasureRow,
+		TreasureCol:   original.TreasureCol,
+		TreasureOnMap: original.TreasureOnMap,
+	}
+}

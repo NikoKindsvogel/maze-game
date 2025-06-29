@@ -1,11 +1,18 @@
 package main
 
 import (
-	"maze-game/game"
-	"maze-game/ui"
+	"log"
+
+	"maze-game/ebiten_ui"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func main() {
-	g := game.NewGame()
-	ui.RunCLI(g)
+	g := ebiten_ui.NewUIManager()
+	ebiten.SetWindowSize(800, 600)
+	ebiten.SetWindowTitle("Maze Game")
+	if err := ebiten.RunGame(g); err != nil {
+		log.Fatal(err)
+	}
 }
