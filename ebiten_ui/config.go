@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"strconv"
+	"strings"
 	"unicode"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -127,7 +128,15 @@ func (c *ConfigScreen) GetConfig() (size, holes, riverPush int, names []string) 
 	size, _ = strconv.Atoi(c.inputs[0])
 	holes, _ = strconv.Atoi(c.inputs[1])
 	riverPush, _ = strconv.Atoi(c.inputs[3])
+
 	names = make([]string, len(c.playerNames))
-	copy(names, c.playerNames)
+	for i, name := range c.playerNames {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			name = fmt.Sprintf("P%d", i+1)
+		}
+		names[i] = name
+	}
+
 	return
 }

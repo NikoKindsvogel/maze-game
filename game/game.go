@@ -53,6 +53,41 @@ func NewGame() *Game {
 	}
 }
 
+func NewGameWithConfig(size, holes, riverPush int, names []string) *Game {
+	cfg := mazegen.MazeConfig{
+		Size:                    size,
+		NumHoles:                holes,
+		NumArmories:             1,
+		NumHospitals:            1,
+		NumDragons:              1,
+		RiverLength:             size - 1,
+		ExtraOpenings:           15,
+		MinTreasureExitDistance: size - 2,
+	}
+
+	var m *maze.Maze
+	var players []*Player
+
+	for {
+		m = mazegen.GenerateMaze(cfg)
+		players = PlacePlayersByName(m, names)
+
+		if AllPlayersCanReachTreasureAndExit(m, players) &&
+			CanReachTreasureFromEstuary(m, m.TreasureRow, m.TreasureCol) &&
+			HospitalReachableFromExit(m) {
+			break
+		}
+	}
+
+	return &Game{
+		Maze:                   m,
+		Players:                players,
+		current:                0,
+		ShowVisibilityMessages: true,
+		RiverMoveLength:        riverPush,
+	}
+}
+
 func (g *Game) PerformAction(cmd string) (string, string) {
 	cmd = strings.ToUpper(cmd)
 

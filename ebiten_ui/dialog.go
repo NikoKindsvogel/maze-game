@@ -21,8 +21,8 @@ type DialogScreen struct {
 	Done        bool
 }
 
-func NewDialogScreen() *DialogScreen {
-	g := game.NewGame() // Or pass in a config if needed
+func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
+	g := game.NewGameWithConfig(size, holes, riverPush, names)
 	return &DialogScreen{
 		Game:        g,
 		Messages:    []string{"Game started. Use commands like: UP, DOWN, LEFT, RIGHT, SHOOT <dir>, SHOW, EXIT"},

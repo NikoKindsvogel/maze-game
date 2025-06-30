@@ -44,6 +44,37 @@ func PlacePlayers(m *maze.Maze, count int) []*Player {
 	return players
 }
 
+func PlacePlayersByName(m *maze.Maze, names []string) []*Player {
+	placed := make(map[[2]int]bool)
+	players := make([]*Player, 0, len(names))
+
+	for _, name := range names {
+		for {
+			r := rand.Intn(m.Size)
+			c := rand.Intn(m.Size)
+			pos := [2]int{r, c}
+
+			if m.Grid[r][c].Type == maze.Empty &&
+				!(r == m.TreasureRow && c == m.TreasureCol) &&
+				!placed[pos] {
+
+				player := &Player{
+					ID:     name,
+					Row:    r,
+					Col:    c,
+					Hurt:   false,
+					Bullet: true,
+				}
+				players = append(players, player)
+				placed[pos] = true
+				break
+			}
+		}
+	}
+
+	return players
+}
+
 func CanReachUsingActions(g *Game, startRow, startCol, targetRow, targetCol int) bool {
 	startState := &Game{
 		Maze: g.Maze,

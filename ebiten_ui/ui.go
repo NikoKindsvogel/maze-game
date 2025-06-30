@@ -17,7 +17,6 @@ type UIManager struct {
 	screen UIScreen
 	config *ConfigScreen
 	dialog *DialogScreen
-	game   *GameScreen
 	reveal *RevealScreen
 }
 
@@ -32,24 +31,18 @@ func (u *UIManager) Update() error {
 	switch u.screen {
 	case ScreenConfig:
 		if u.config.Done {
-			u.dialog = NewDialogScreen()
+			size, holes, riverPush, names := u.config.GetConfig()
+			u.dialog = NewDialogScreen(size, holes, riverPush, names)
 			u.screen = ScreenDialog
 		} else {
 			u.config.Update()
 		}
 	case ScreenDialog:
 		if u.dialog.Done {
-			u.game = NewGameScreen()
-			u.screen = ScreenGame
-		} else {
-			u.dialog.Update()
-		}
-	case ScreenGame:
-		if u.game.Finished {
-			u.reveal = NewRevealScreen(u.game.MazeStart, u.game.MazeEnd)
+			u.reveal = NewRevealScreen(u.dialog.Game.Maze, u.dialog.Game.Maze)
 			u.screen = ScreenReveal
 		} else {
-			u.game.Update()
+			u.dialog.Update()
 		}
 	case ScreenReveal:
 		u.reveal.Update()
@@ -63,8 +56,6 @@ func (u *UIManager) Draw(screen *ebiten.Image) {
 		u.config.Draw(screen)
 	case ScreenDialog:
 		u.dialog.Draw(screen)
-	case ScreenGame:
-		u.game.Draw(screen)
 	case ScreenReveal:
 		u.reveal.Draw(screen)
 	}
