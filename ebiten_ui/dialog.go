@@ -8,7 +8,6 @@ import (
 	"maze-game/game"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/font/basicfont"
 )
@@ -102,12 +101,41 @@ func (d *DialogScreen) appendMessage(msg string) {
 
 func (d *DialogScreen) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{30, 30, 30, 255})
-	y := 10
-	for _, msg := range d.Messages {
-		text.Draw(screen, msg, basicfont.Face7x13, 10, y, color.White)
-		y += 16
+
+	height := screen.Bounds().Dy()
+	lineHeight := 16
+	margin := 10
+
+	// Prepare input and player turn info
+	inputLine := "> " + d.Input
+	player := d.Game.CurrentPlayer()
+	turnInfo := fmt.Sprintf("%s's turn", player.ID)
+
+	// Reserve bottom lines for input and turn display
+	availableHeight := height - 2*margin - 2*lineHeight
+	messageLines := availableHeight / lineHeight
+
+	// Clip messages to most recent that fit
+	start := 0
+	if len(d.Messages) > messageLines {
+		start = len(d.Messages) - messageLines
 	}
-	ebitenutil.DebugPrintAt(screen, "> "+d.Input, 10, y+10)
+	visible := d.Messages[start:]
+
+	// Calculate starting Y from bottom up
+	y := height - margin - lineHeight*2 // start above turn line
+
+	// Draw messages from bottom up
+	for i := len(visible) - 1; i >= 0; i-- {
+		text.Draw(screen, visible[i], basicfont.Face7x13, margin, y, color.White)
+		y -= lineHeight
+	}
+
+	// Draw turn info
+	text.Draw(screen, turnInfo, basicfont.Face7x13, margin, height-margin-lineHeight, color.RGBA{200, 200, 0, 255})
+
+	// Draw input line
+	text.Draw(screen, inputLine, basicfont.Face7x13, margin, height-margin, color.White)
 }
 
 func (d *DialogScreen) renderMap() string {

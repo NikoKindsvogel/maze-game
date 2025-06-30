@@ -62,5 +62,5 @@ func (u *UIManager) Draw(screen *ebiten.Image) {
 }
 
 func (u *UIManager) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return 800, 600
+	return outsideWidth, outsideHeight
 }
