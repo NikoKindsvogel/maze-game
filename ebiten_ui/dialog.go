@@ -3,9 +3,9 @@ package ebiten_ui
 import (
 	"fmt"
 	"image/color"
-	"strings"
-
 	"maze-game/game"
+	"maze-game/maze"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text"
@@ -13,19 +13,19 @@ import (
 )
 
 type DialogScreen struct {
-	Game        *game.Game
-	Input       string
-	Messages    []string
-	MaxMessages int
-	Done        bool
+	Game      *game.Game
+	Input     string
+	Messages  []string
+	Done      bool
+	startMaze maze.Maze
 }
 
 func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
 	g := game.NewGameWithConfig(size, holes, riverPush, names)
 	return &DialogScreen{
-		Game:        g,
-		Messages:    []string{"Game started. Use commands like: UP, DOWN, LEFT, RIGHT, SHOOT <dir>, SHOW, EXIT"},
-		MaxMessages: 20,
+		Game:      g,
+		Messages:  []string{"Game started. Use commands like: UP, DOWN, LEFT, RIGHT, SHOOT <dir>, SHOW, EXIT"},
+		startMaze: *maze.CopyMaze(g.GetMaze()),
 	}
 }
 
@@ -94,48 +94,34 @@ func (d *DialogScreen) processCommand(input string) {
 func (d *DialogScreen) appendMessage(msg string) {
 	lines := strings.Split(msg, "\n")
 	d.Messages = append(d.Messages, lines...)
-	if len(d.Messages) > d.MaxMessages {
-		d.Messages = d.Messages[len(d.Messages)-d.MaxMessages:]
-	}
 }
 
 func (d *DialogScreen) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{30, 30, 30, 255})
 
 	height := screen.Bounds().Dy()
-	lineHeight := 16
-	margin := 10
+	lineHeight := 18
+	margin := 40
 
-	// Prepare input and player turn info
+	// Prepare input and turn display
 	inputLine := "> " + d.Input
 	player := d.Game.CurrentPlayer()
 	turnInfo := fmt.Sprintf("%s's turn", player.ID)
 
-	// Reserve bottom lines for input and turn display
-	availableHeight := height - 2*margin - 2*lineHeight
-	messageLines := availableHeight / lineHeight
+	y := height - margin - 3*lineHeight
 
-	// Clip messages to most recent that fit
-	start := 0
-	if len(d.Messages) > messageLines {
-		start = len(d.Messages) - messageLines
-	}
-	visible := d.Messages[start:]
-
-	// Calculate starting Y from bottom up
-	y := height - margin - lineHeight*2 // start above turn line
-
-	// Draw messages from bottom up
-	for i := len(visible) - 1; i >= 0; i-- {
-		text.Draw(screen, visible[i], basicfont.Face7x13, margin, y, color.White)
+	// Draw messages bottom-up, but only if in-bounds
+	for i := len(d.Messages) - 1; i >= 0; i-- {
+		if y < margin {
+			break // don’t draw past top margin
+		}
+		text.Draw(screen, d.Messages[i], basicfont.Face7x13, margin, y, color.White)
 		y -= lineHeight
 	}
 
-	// Draw turn info
-	text.Draw(screen, turnInfo, basicfont.Face7x13, margin, height-margin-lineHeight, color.RGBA{200, 200, 0, 255})
-
-	// Draw input line
-	text.Draw(screen, inputLine, basicfont.Face7x13, margin, height-margin, color.White)
+	// Draw turn and input lines
+	text.Draw(screen, turnInfo, basicfont.Face7x13, margin, height-margin-2*lineHeight, color.RGBA{200, 200, 0, 255})
+	text.Draw(screen, inputLine, basicfont.Face7x13, margin, height-margin-lineHeight, color.White)
 }
 
 func (d *DialogScreen) renderMap() string {

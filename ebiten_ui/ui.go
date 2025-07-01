@@ -39,7 +39,7 @@ func (u *UIManager) Update() error {
 		}
 	case ScreenDialog:
 		if u.dialog.Done {
-			u.reveal = NewRevealScreen(u.dialog.Game.Maze, u.dialog.Game.Maze)
+			u.reveal = NewRevealScreen(&u.dialog.startMaze, u.dialog.Game.Maze)
 			u.screen = ScreenReveal
 		} else {
 			u.dialog.Update()
