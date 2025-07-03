@@ -2,15 +2,12 @@ package ebiten_ui
 
 import (
 	"image"
-	"image/color"
 	"log"
 	"math"
 	"maze-game/maze"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text"
-	"golang.org/x/image/font/basicfont"
 )
 
 const (
@@ -32,6 +29,7 @@ type RevealScreen struct {
 	WallH        *ebiten.Image
 	WallV        *ebiten.Image
 	Treasure     *ebiten.Image
+	Treasure_big *ebiten.Image
 	RiverCorner  *ebiten.Image
 	ShowCurrent  bool
 	mouseWasDown bool
@@ -42,6 +40,7 @@ func NewRevealScreen(start, final *maze.Maze) *RevealScreen {
 	wallH := loadImage("assets/wall_horizontal_long.png")
 	wallV := loadImage("assets/wall_vertical_long.png")
 	treasure := loadImage("assets/treasure.png")
+	treasure_big := loadImage("assets/cell_treasure.png")
 	river_corner := loadImage("assets/cell_river_corner.png")
 
 	// for testing:
@@ -50,13 +49,14 @@ func NewRevealScreen(start, final *maze.Maze) *RevealScreen {
 	// treasure := createColoredImage(color.RGBA{255, 215, 0, 128})    // semi-transparent gold
 
 	return &RevealScreen{
-		StartMaze:   start,
-		FinalMaze:   final,
-		Images:      images,
-		WallH:       wallH,
-		WallV:       wallV,
-		Treasure:    treasure,
-		RiverCorner: river_corner,
+		StartMaze:    start,
+		FinalMaze:    final,
+		Images:       images,
+		WallH:        wallH,
+		WallV:        wallV,
+		Treasure:     treasure,
+		Treasure_big: treasure_big,
+		RiverCorner:  river_corner,
 	}
 }
 
@@ -76,20 +76,12 @@ func (r *RevealScreen) Update() error {
 }
 
 func (r *RevealScreen) Draw(screen *ebiten.Image) {
-	// Draw button
-	btnColor := color.RGBA{R: 100, G: 100, B: 255, A: 255}
-	btnRect := ebiten.NewImage(buttonW, buttonH)
-	btnRect.Fill(btnColor)
 
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(buttonX), float64(buttonY))
-	screen.DrawImage(btnRect, op)
-
-	textToShow := "Show Start"
 	if !r.ShowCurrent {
-		textToShow = "Show Current"
+		drawButton(screen, buttonX, buttonY, "Show Current")
+	} else {
+		drawButton(screen, buttonX, buttonY, "Show Start")
 	}
-	text.Draw(screen, textToShow, basicfont.Face7x13, buttonX+10, buttonY+25, color.White)
 
 	// Draw maze based on toggle
 	if r.ShowCurrent {
@@ -232,7 +224,11 @@ func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) 
 			if m.TreasureOnMap && m.TreasureRow == row && m.TreasureCol == col {
 				tOp := &ebiten.DrawImageOptions{}
 				tOp.GeoM.Translate(float64(x), float64(y))
-				screen.DrawImage(r.Treasure, tOp)
+				if cell.Type == maze.Armory || cell.Type == maze.Hole || cell.Type == maze.Hospital {
+					screen.DrawImage(r.Treasure, tOp)
+				} else {
+					screen.DrawImage(r.Treasure_big, tOp)
+				}
 			}
 		}
 	}
