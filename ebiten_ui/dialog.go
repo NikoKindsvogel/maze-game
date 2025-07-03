@@ -18,6 +18,8 @@ type DialogScreen struct {
 	Messages  []string
 	Done      bool
 	startMaze maze.Maze
+
+	KeyWasDown map[ebiten.Key]bool
 }
 
 func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
@@ -26,21 +28,55 @@ func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
 		Game:      g,
 		Messages:  []string{"Game started. Use commands like: UP, DOWN, LEFT, RIGHT, SHOOT <dir>, SHOW, EXIT"},
 		startMaze: *maze.CopyMaze(g.GetMaze()),
+		KeyWasDown: map[ebiten.Key]bool{
+			ebiten.KeyArrowUp:    false,
+			ebiten.KeyArrowDown:  false,
+			ebiten.KeyArrowLeft:  false,
+			ebiten.KeyArrowRight: false,
+			ebiten.KeyEnter:      false,
+		},
 	}
 }
 
 func (d *DialogScreen) Update() {
+	// Handle text input
 	for _, key := range ebiten.InputChars() {
 		if key >= 32 && key <= 126 {
 			d.Input += string(key)
 		}
 	}
+
+	// Backspace
 	if ebiten.IsKeyPressed(ebiten.KeyBackspace) && len(d.Input) > 0 {
 		d.Input = d.Input[:len(d.Input)-1]
 	}
+
+	// Enter
 	if ebiten.IsKeyPressed(ebiten.KeyEnter) {
-		d.processCommand(d.Input)
-		d.Input = ""
+		if !d.KeyWasDown[ebiten.KeyEnter] {
+			d.processCommand(d.Input)
+			d.Input = ""
+		}
+		d.KeyWasDown[ebiten.KeyEnter] = true
+	} else {
+		d.KeyWasDown[ebiten.KeyEnter] = false
+	}
+
+	// Arrow keys as movement commands
+	d.checkArrowKey(ebiten.KeyArrowUp, "UP")
+	d.checkArrowKey(ebiten.KeyArrowDown, "DOWN")
+	d.checkArrowKey(ebiten.KeyArrowLeft, "LEFT")
+	d.checkArrowKey(ebiten.KeyArrowRight, "RIGHT")
+}
+
+func (d *DialogScreen) checkArrowKey(key ebiten.Key, command string) {
+	if ebiten.IsKeyPressed(key) {
+		if !d.KeyWasDown[key] {
+			d.processCommand(command)
+		}
+		d.KeyWasDown[key] = true
+	} else {
+		d.KeyWasDown[key] = false
 	}
 }
 
@@ -71,15 +107,45 @@ func (d *DialogScreen) processCommand(input string) {
 			d.appendMessage("Unknown command.")
 			return
 		}
-	} else if len(parts) == 2 && strings.ToUpper(parts[0]) == "SHOOT" {
-		dir := strings.ToUpper(parts[1])
-		if dir == "UP" || dir == "DOWN" || dir == "LEFT" || dir == "RIGHT" {
-			result, _ = d.Game.PerformAction(fmt.Sprintf("SHOOT %s", dir))
-		} else {
-			d.appendMessage("Invalid direction for SHOOT.")
+	} else if len(parts) == 2 {
+		cmd := strings.ToUpper(parts[0])
+		arg := parts[1]
+
+		switch cmd {
+		case "SHOOT":
+			dir := strings.ToUpper(arg)
+			if dir == "UP" || dir == "DOWN" || dir == "LEFT" || dir == "RIGHT" {
+				result, _ = d.Game.PerformAction(fmt.Sprintf("SHOOT %s", dir))
+			} else {
+				d.appendMessage("Invalid direction for SHOOT.")
+				return
+			}
+		case "SAVE":
+			err := d.Game.SaveToFile(arg)
+			if err != nil {
+				d.appendMessage("Error saving game: " + err.Error())
+			} else {
+				d.appendMessage("Game saved to " + arg)
+			}
+			return
+		case "LOAD":
+			newGame, err := game.LoadFromFile(arg)
+			if err != nil {
+				d.appendMessage("Error loading game: " + err.Error())
+			} else {
+				*d.Game = *newGame
+				d.startMaze = *maze.CopyMaze(newGame.GetMaze())
+				d.appendMessage("Game loaded from " + arg)
+				d.appendMessage(d.renderMap())
+			}
+			return
+
+		default:
+			d.appendMessage("Unknown command.")
 			return
 		}
 	} else {
+		d.appendMessage("Invalid command.")
 		return
 	}
 
