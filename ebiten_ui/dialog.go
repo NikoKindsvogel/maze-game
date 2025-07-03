@@ -136,7 +136,6 @@ func (d *DialogScreen) processCommand(input string) {
 				*d.Game = *newGame
 				d.startMaze = *maze.CopyMaze(newGame.GetMaze())
 				d.appendMessage("Game loaded from " + arg)
-				d.appendMessage(d.renderMap())
 			}
 			return
 
