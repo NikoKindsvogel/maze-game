@@ -28,8 +28,8 @@ type RevealScreen struct {
 
 func NewRevealScreen(start, final *maze.Maze) *RevealScreen {
 	images := loadCellImages()
-	wallH := loadImage("assets/wall_horizontal.png")
-	wallV := loadImage("assets/wall_vertical.png")
+	wallH := loadImage("assets/wall_horizontal_long.png")
+	wallV := loadImage("assets/wall_vertical_long.png")
 	treasure := loadImage("assets/treasure.png")
 	river_corner := loadImage("assets/cell_river_corner.png")
 
@@ -67,6 +67,34 @@ func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) 
 			cell := m.Grid[row][col]
 			x := ox + col*cellSize
 			y := oy + row*cellSize
+
+			// When drawing the exit tile inside drawMaze, after computing x, y:
+
+			if cell.Type == maze.Exit {
+				img := r.Images[cell.Type]
+				op := &ebiten.DrawImageOptions{}
+
+				// Move origin to center for rotation
+				op.GeoM.Translate(-float64(cellSize)/2, -float64(cellSize)/2)
+
+				// Determine rotation based on exit position
+				switch {
+				case row == 0: // Top edge → look up, rotate -90°
+					op.GeoM.Rotate(-math.Pi / 2)
+				case row == m.Size-1: // Bottom edge → look down, rotate 90°
+					op.GeoM.Rotate(math.Pi / 2)
+				case col == 0: // Left edge → look left, rotate 180°
+					op.GeoM.Rotate(math.Pi)
+				case col == m.Size-1: // Right edge → default (looking right), no rotation
+					// no rotation needed
+				}
+
+				// Move origin back to top-left plus cell position
+				op.GeoM.Translate(float64(x)+float64(cellSize)/2, float64(y)+float64(cellSize)/2)
+
+				screen.DrawImage(img, op)
+				continue // skip normal drawing for this cell since already drawn
+			}
 
 			if cell.Type == maze.River || cell.Type == maze.Estuary {
 				dir := cell.RiverDir
@@ -162,23 +190,6 @@ func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) 
 				screen.DrawImage(img, op)
 			}
 
-			// // Draw walls
-			// // Vertical wall on the right between cells (col and col+1)
-			// if cell.Walls[maze.Right] && col < m.Size-1 {
-			// 	wallOp := &ebiten.DrawImageOptions{}
-			// 	// Shift left by half wall thickness to center wall on border
-			// 	wallOp.GeoM.Translate(float64(x+cellSize)-float64(wallOffset)/2, float64(y))
-			// 	screen.DrawImage(r.WallV, wallOp)
-			// }
-
-			// // Horizontal wall on the bottom between cells (row and row+1)
-			// if cell.Walls[maze.Down] && row < m.Size-1 {
-			// 	wallOp := &ebiten.DrawImageOptions{}
-			// 	// Shift up by half wall thickness to center wall on border
-			// 	wallOp.GeoM.Translate(float64(x), float64(y+cellSize)-float64(wallOffset)/2)
-			// 	screen.DrawImage(r.WallH, wallOp)
-			// }
-
 			// Treasure overlay
 			if m.TreasureOnMap && m.TreasureRow == row && m.TreasureCol == col {
 				tOp := &ebiten.DrawImageOptions{}
@@ -200,13 +211,13 @@ func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) 
 			// vertical inner wall (right)
 			if cell.Walls[maze.Right] && col < m.Size-1 {
 				wallOp := &ebiten.DrawImageOptions{}
-				wallOp.GeoM.Translate(float64(x+cellSize)-halfWall, float64(y))
+				wallOp.GeoM.Translate(float64(x+cellSize)-halfWall, float64(y)-halfWall)
 				screen.DrawImage(r.WallV, wallOp)
 			}
 			// horizontal inner wall (down)
 			if cell.Walls[maze.Down] && row < m.Size-1 {
 				wallOp := &ebiten.DrawImageOptions{}
-				wallOp.GeoM.Translate(float64(x), float64(y+cellSize)-halfWall)
+				wallOp.GeoM.Translate(float64(x)-halfWall, float64(y+cellSize)-halfWall)
 				screen.DrawImage(r.WallH, wallOp)
 			}
 		}
@@ -218,12 +229,12 @@ func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) 
 
 		// Left border wall, shifted half outside to the left (negative)
 		wallOpLeft := &ebiten.DrawImageOptions{}
-		wallOpLeft.GeoM.Translate(float64(ox)-halfWall, float64(y))
+		wallOpLeft.GeoM.Translate(float64(ox)-halfWall, float64(y)-halfWall)
 		screen.DrawImage(r.WallV, wallOpLeft)
 
 		// Right border wall, shifted half inside the last cell
 		wallOpRight := &ebiten.DrawImageOptions{}
-		wallOpRight.GeoM.Translate(float64(ox+m.Size*cellSize)-halfWall, float64(y))
+		wallOpRight.GeoM.Translate(float64(ox+m.Size*cellSize)-halfWall, float64(y)-halfWall)
 		screen.DrawImage(r.WallV, wallOpRight)
 	}
 
@@ -233,23 +244,15 @@ func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) 
 
 		// Top border wall, shifted half outside above the maze
 		wallOpTop := &ebiten.DrawImageOptions{}
-		wallOpTop.GeoM.Translate(float64(x), float64(oy)-halfWall)
+		wallOpTop.GeoM.Translate(float64(x)-halfWall, float64(oy)-halfWall)
 		screen.DrawImage(r.WallH, wallOpTop)
 
 		// Bottom border wall, shifted half inside the last row cell
 		wallOpBottom := &ebiten.DrawImageOptions{}
-		wallOpBottom.GeoM.Translate(float64(x), float64(oy+m.Size*cellSize)-halfWall)
+		wallOpBottom.GeoM.Translate(float64(x)-halfWall, float64(oy+m.Size*cellSize)-halfWall)
 		screen.DrawImage(r.WallH, wallOpBottom)
 	}
 
-}
-
-func drawRotatedImage(dst *ebiten.Image, img *ebiten.Image, x, y int, angle float64) {
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(-float64(img.Bounds().Dx())/2, -float64(img.Bounds().Dy())/2) // center
-	op.GeoM.Rotate(angle)
-	op.GeoM.Translate(float64(x)+float64(cellSize)/2, float64(y)+float64(cellSize)/2)
-	dst.DrawImage(img, op)
 }
 
 func loadImage(path string) *ebiten.Image {
@@ -277,30 +280,3 @@ func loadCellImages() map[maze.CellType]*ebiten.Image {
 		maze.Estuary:  loadImage("assets/cell_estuary.png"),
 	}
 }
-
-// for testing:
-
-// func loadCellImages() map[maze.CellType]*ebiten.Image {
-// 	return map[maze.CellType]*ebiten.Image{
-// 		maze.Empty:    createColoredImage(color.RGBA{200, 200, 200, 255}), // light gray
-// 		maze.Hospital: createColoredImage(color.RGBA{255, 100, 100, 255}), // red
-// 		maze.Exit:     createColoredImage(color.RGBA{0, 255, 0, 255}),     // green
-// 		maze.Hole:     createColoredImage(color.RGBA{50, 50, 50, 255}),    // dark gray
-// 		maze.Dragon:   createColoredImage(color.RGBA{150, 0, 0, 255}),     // dark red
-// 		maze.Armory:   createColoredImage(color.RGBA{0, 0, 255, 255}),     // blue
-// 		maze.River:    createColoredImage(color.RGBA{0, 150, 255, 255}),   // cyan
-// 		maze.Estuary:  createColoredImage(color.RGBA{0, 255, 255, 255}),   // aqua
-// 	}
-// }
-
-// func createColoredImage(color color.Color) *ebiten.Image {
-// 	img := ebiten.NewImage(cellSize, cellSize)
-// 	img.Fill(color)
-// 	return img
-// }
-
-// func createWallImage(width, height int, col color.Color) *ebiten.Image {
-// 	img := ebiten.NewImage(width, height)
-// 	img.Fill(col)
-// 	return img
-// }
