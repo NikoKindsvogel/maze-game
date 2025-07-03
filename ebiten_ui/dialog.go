@@ -19,10 +19,18 @@ type DialogScreen struct {
 	startGame game.Game
 
 	KeyWasDown map[ebiten.Key]bool
+
+	Background *ebiten.Image
 }
+
+const (
+	xMargin = 210
+	yMargin = 70
+)
 
 func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
 	g := game.NewGameWithConfig(size, holes, riverPush, names)
+	bgImage := loadImage("assets/background.png")
 	return &DialogScreen{
 		Game:      g,
 		Messages:  []string{"Game started. Use commands like: UP, DOWN, LEFT, RIGHT, SHOOT <dir>, SHOW, EXIT"},
@@ -34,6 +42,7 @@ func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
 			ebiten.KeyArrowRight: false,
 			ebiten.KeyEnter:      false,
 		},
+		Background: bgImage,
 	}
 }
 
@@ -161,31 +170,33 @@ func (d *DialogScreen) appendMessage(msg string) {
 }
 
 func (d *DialogScreen) Draw(screen *ebiten.Image) {
-	screen.Fill(color.RGBA{30, 30, 30, 255})
+	if d.Background != nil {
+		op := &ebiten.DrawImageOptions{}
+		screen.DrawImage(d.Background, op)
+	}
 
 	height := screen.Bounds().Dy()
 	lineHeight := 18
-	margin := 40
 
 	// Prepare input and turn display
 	inputLine := "> " + d.Input
 	player := d.Game.CurrentPlayer()
 	turnInfo := fmt.Sprintf("%s's turn", player.ID)
 
-	y := height - margin - 3*lineHeight
+	y := height - yMargin - 3*lineHeight
 
 	// Draw messages bottom-up, but only if in-bounds
 	for i := len(d.Messages) - 1; i >= 0; i-- {
-		if y < margin {
+		if y < yMargin {
 			break // don’t draw past top margin
 		}
-		text.Draw(screen, d.Messages[i], basicfont.Face7x13, margin, y, color.White)
+		text.Draw(screen, d.Messages[i], basicfont.Face7x13, xMargin, y, color.White)
 		y -= lineHeight
 	}
 
 	// Draw turn and input lines
-	text.Draw(screen, turnInfo, basicfont.Face7x13, margin, height-margin-2*lineHeight, color.RGBA{200, 200, 0, 255})
-	text.Draw(screen, inputLine, basicfont.Face7x13, margin, height-margin-lineHeight, color.White)
+	text.Draw(screen, turnInfo, basicfont.Face7x13, xMargin, height-yMargin-2*lineHeight, color.RGBA{200, 200, 0, 255})
+	text.Draw(screen, inputLine, basicfont.Face7x13, xMargin, height-yMargin-lineHeight, color.White)
 }
 
 func (d *DialogScreen) renderMap() string {

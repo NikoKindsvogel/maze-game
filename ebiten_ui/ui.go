@@ -1,7 +1,9 @@
 package ebiten_ui
 
 import (
+	"image"
 	"image/color"
+	"log"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -94,4 +96,17 @@ func drawButton(screen *ebiten.Image, x, y int, label string) {
 	textX := x + 10
 	textY := y + 25
 	text.Draw(screen, label, basicfont.Face7x13, textX, textY, color.White)
+}
+
+func loadImage(path string) *ebiten.Image {
+	f, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	img, _, err := image.Decode(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return ebiten.NewImageFromImage(img)
 }

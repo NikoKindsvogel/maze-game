@@ -1,12 +1,9 @@
 package ebiten_ui
 
 import (
-	"image"
-	"log"
 	"math"
 	"maze-game/game"
 	"maze-game/maze"
-	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -34,7 +31,8 @@ type RevealScreen struct {
 	RiverCorner  *ebiten.Image
 	ShowCurrent  bool
 	mouseWasDown bool
-	PlayerImages []*ebiten.Image // index 0-7 for 8 players
+	PlayerImages []*ebiten.Image
+	Background   *ebiten.Image
 }
 
 func NewRevealScreen(start, final *game.Game) *RevealScreen {
@@ -45,6 +43,7 @@ func NewRevealScreen(start, final *game.Game) *RevealScreen {
 	treasure := loadImage("assets/treasure.png")
 	treasure_big := loadImage("assets/cell_treasure.png")
 	river_corner := loadImage("assets/cell_river_corner.png")
+	bgImage := loadImage("assets/background.png")
 
 	return &RevealScreen{
 		StartGame:    start,
@@ -56,6 +55,7 @@ func NewRevealScreen(start, final *game.Game) *RevealScreen {
 		Treasure_big: treasure_big,
 		RiverCorner:  river_corner,
 		PlayerImages: playerImages,
+		Background:   bgImage,
 	}
 }
 
@@ -75,6 +75,11 @@ func (r *RevealScreen) Update() error {
 }
 
 func (r *RevealScreen) Draw(screen *ebiten.Image) {
+
+	if r.Background != nil {
+		op := &ebiten.DrawImageOptions{}
+		screen.DrawImage(r.Background, op)
+	}
 
 	if !r.ShowCurrent {
 		drawButton(screen, buttonX, buttonY, "Show Current")
@@ -276,19 +281,6 @@ func (r *RevealScreen) drawPlayers(screen *ebiten.Image, ox, oy int, players []*
 		op.GeoM.Translate(float64(x), float64(y))
 		screen.DrawImage(img, op)
 	}
-}
-
-func loadImage(path string) *ebiten.Image {
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	img, _, err := image.Decode(f)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return ebiten.NewImageFromImage(img)
 }
 
 func loadCellImages() map[maze.CellType]*ebiten.Image {
