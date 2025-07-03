@@ -118,15 +118,19 @@ func placeSmartRiver(m *maze.Maze, length int) {
 	dirs := []maze.Direction{maze.Up, maze.Right, maze.Down, maze.Left}
 
 	for attempt := 0; attempt < 100000; attempt++ {
-		r := rand.Intn(m.Size)
-		c := rand.Intn(m.Size)
+		startR := rand.Intn(m.Size)
+		startC := rand.Intn(m.Size)
 
-		if m.Grid[r][c].Type != maze.Empty {
+		if m.Grid[startR][startC].Type != maze.Empty {
 			continue
 		}
 
-		path := [][2]int{{r, c}}
+		path := [][2]int{{startR, startC}}
+		used := map[[2]int]bool{
+			{startR, startC}: true,
+		}
 		dir := dirs[rand.Intn(4)]
+		r, c := startR, startC
 
 		for i := 1; i < length+2; i++ {
 			// Occasionally change direction
@@ -136,31 +140,35 @@ func placeSmartRiver(m *maze.Maze, length int) {
 
 			dr, dc := maze.Delta(dir)
 			nr, nc := r+dr, c+dc
+			nextPos := [2]int{nr, nc}
 
-			// Stop if out of bounds, blocked, or not empty
 			if !m.InBounds(nr, nc) ||
 				m.Grid[nr][nc].Type != maze.Empty ||
 				m.Grid[r][c].Walls[dir] ||
-				m.Grid[nr][nc].Walls[maze.Opposite(dir)] {
+				m.Grid[nr][nc].Walls[maze.Opposite(dir)] ||
+				used[nextPos] {
 				break
 			}
 
-			path = append(path, [2]int{nr, nc})
+			path = append(path, nextPos)
+			used[nextPos] = true
 			r, c = nr, nc
 		}
 
+		// Must be at least the requested length
 		if len(path) < length {
 			continue
 		}
 
-		// Now set directions and types
+		// Valid river path: mark river + estuary with correct directions
 		for i := 0; i < len(path); i++ {
 			r, c := path[i][0], path[i][1]
 			if i == len(path)-1 {
 				m.Grid[r][c].Type = maze.Estuary
+				pr, pc := path[i-1][0], path[i-1][1]
+				m.Grid[r][c].RiverDir = maze.DirectionFromDelta(r-pr, c-pc)
 			} else {
 				m.Grid[r][c].Type = maze.River
-				// Direction is from current to *next* tile
 				nr, nc := path[i+1][0], path[i+1][1]
 				m.Grid[r][c].RiverDir = maze.DirectionFromDelta(nr-r, nc-c)
 			}
