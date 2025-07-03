@@ -94,199 +94,171 @@ func (r *RevealScreen) Draw(screen *ebiten.Image) {
 func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) {
 	for row := 0; row < m.Size; row++ {
 		for col := 0; col < m.Size; col++ {
-			cell := m.Grid[row][col]
-			x := ox + col*cellSize
-			y := oy + row*cellSize
+			r.drawCell(screen, m, row, col, ox, oy)
+		}
+	}
+	r.drawInnerWalls(screen, m, ox, oy)
+	r.drawBorderWalls(screen, m, ox, oy)
+}
 
-			// When drawing the exit tile inside drawMaze, after computing x, y:
+func (r *RevealScreen) drawCell(screen *ebiten.Image, m *maze.Maze, row, col, ox, oy int) {
+	cell := m.Grid[row][col]
+	x := ox + col*cellSize
+	y := oy + row*cellSize
 
-			if cell.Type == maze.Exit {
-				img := r.Images[cell.Type]
-				op := &ebiten.DrawImageOptions{}
+	switch cell.Type {
+	case maze.Exit:
+		r.drawExit(screen, *cell, row, col, x, y, m.Size)
+	case maze.River, maze.Estuary:
+		r.drawRiverOrEstuary(screen, *cell, row, col, x, y, m)
+	default:
+		img := r.Images[cell.Type]
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(x), float64(y))
+		screen.DrawImage(img, op)
+	}
 
-				// Move origin to center for rotation
-				op.GeoM.Translate(-float64(cellSize)/2, -float64(cellSize)/2)
+	// Treasure overlay
+	if m.TreasureOnMap && m.TreasureRow == row && m.TreasureCol == col {
+		tOp := &ebiten.DrawImageOptions{}
+		tOp.GeoM.Translate(float64(x), float64(y))
+		if cell.Type == maze.Armory || cell.Type == maze.Hole || cell.Type == maze.Hospital {
+			screen.DrawImage(r.Treasure, tOp)
+		} else {
+			screen.DrawImage(r.Treasure_big, tOp)
+		}
+	}
+}
 
-				// Determine rotation based on exit position
-				switch {
-				case row == 0: // Top edge → look up, rotate -90°
-					op.GeoM.Rotate(-math.Pi / 2)
-				case row == m.Size-1: // Bottom edge → look down, rotate 90°
-					op.GeoM.Rotate(math.Pi / 2)
-				case col == 0: // Left edge → look left, rotate 180°
-					op.GeoM.Rotate(math.Pi)
-				case col == m.Size-1: // Right edge → default (looking right), no rotation
-					// no rotation needed
-				}
+func (r *RevealScreen) drawExit(screen *ebiten.Image, cell maze.Cell, row, col, x, y, size int) {
+	img := r.Images[cell.Type]
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(-float64(cellSize)/2, -float64(cellSize)/2)
 
-				// Move origin back to top-left plus cell position
-				op.GeoM.Translate(float64(x)+float64(cellSize)/2, float64(y)+float64(cellSize)/2)
+	switch {
+	case row == 0:
+		op.GeoM.Rotate(-math.Pi / 2)
+	case row == size-1:
+		op.GeoM.Rotate(math.Pi / 2)
+	case col == 0:
+		op.GeoM.Rotate(math.Pi)
+	}
 
-				screen.DrawImage(img, op)
-				continue // skip normal drawing for this cell since already drawn
-			}
+	op.GeoM.Translate(float64(x)+float64(cellSize)/2, float64(y)+float64(cellSize)/2)
+	screen.DrawImage(img, op)
+}
 
-			if cell.Type == maze.River || cell.Type == maze.Estuary {
-				dir := cell.RiverDir
+func (r *RevealScreen) drawRiverOrEstuary(screen *ebiten.Image, cell maze.Cell, row, col, x, y int, m *maze.Maze) {
+	dir := cell.RiverDir
+	var img *ebiten.Image
+	op := &ebiten.DrawImageOptions{}
 
-				var img *ebiten.Image
-				op := &ebiten.DrawImageOptions{}
-
-				if cell.Type == maze.River {
-					// Try to determine previous direction (incoming river)
-					var prevDir maze.Direction
-					foundPrev := false
-
-					for _, d := range []maze.Direction{maze.Up, maze.Right, maze.Down, maze.Left} {
-						dr, dc := maze.Delta(d) // unpack delta properly
-						pr, pc := row+dr, col+dc
-						if m.InBounds(pr, pc) && m.Grid[pr][pc].Type == maze.River {
-							if m.Grid[pr][pc].RiverDir == maze.Opposite(d) {
-								prevDir = d
-								foundPrev = true
-								break
-							}
-						}
-					}
-
-					nextDir := dir
-					foundNext := true
-
-					if foundPrev && foundNext && prevDir != maze.Opposite(nextDir) {
-						// Corner tile
-						img = r.RiverCorner
-
-						// Rotate around center
-						op.GeoM.Translate(-float64(cellSize)/2, -float64(cellSize)/2)
-
-						switch {
-						case prevDir == maze.Down && nextDir == maze.Right:
-							op.GeoM.Rotate(0) // 0°
-						case prevDir == maze.Right && nextDir == maze.Up:
-							op.GeoM.Rotate(3 * math.Pi / 2) // 270°
-						case prevDir == maze.Up && nextDir == maze.Left:
-							op.GeoM.Rotate(math.Pi) // 180°
-						case prevDir == maze.Left && nextDir == maze.Down:
-							op.GeoM.Rotate(math.Pi / 2) // 90°
-						case prevDir == maze.Right && nextDir == maze.Down:
-							op.GeoM.Rotate(0) // 0°
-						case prevDir == maze.Up && nextDir == maze.Right:
-							op.GeoM.Rotate(3 * math.Pi / 2) // 270°
-						case prevDir == maze.Left && nextDir == maze.Up:
-							op.GeoM.Rotate(math.Pi) // 180°
-						case prevDir == maze.Down && nextDir == maze.Left:
-							op.GeoM.Rotate(math.Pi / 2) // 90°
-						default:
-							img = r.Images[cell.Type]
-						}
-
-						op.GeoM.Translate(float64(x)+float64(cellSize)/2, float64(y)+float64(cellSize)/2)
-					} else {
-						// Straight tile
-						img = r.Images[cell.Type]
-						if dir == maze.Up || dir == maze.Down {
-							op.GeoM.Translate(-float64(cellSize)/2, -float64(cellSize)/2)
-							op.GeoM.Rotate(math.Pi / 2)
-							op.GeoM.Translate(float64(x)+float64(cellSize)/2, float64(y)+float64(cellSize)/2)
-						} else {
-							op.GeoM.Translate(float64(x), float64(y))
-						}
-					}
-				} else if cell.Type == maze.Estuary {
-					img = r.Images[cell.Type] // or estuary image if you have one
-
-					op.GeoM.Translate(-float64(cellSize)/2, -float64(cellSize)/2) // move origin to center
-
-					switch dir {
-					case maze.Up:
-						op.GeoM.Rotate(-math.Pi / 2) // rotate -90° (river coming from Up → face Down)
-					case maze.Down:
-						op.GeoM.Rotate(math.Pi / 2) // rotate 90° (river coming from Down → face Up)
-					case maze.Left:
-						op.GeoM.Rotate(math.Pi) // rotate 180° (river coming from Left → face Right)
-					case maze.Right:
-						op.GeoM.Rotate(0) // no rotation needed (river from Right → face Left)
-					}
-
-					op.GeoM.Translate(float64(x)+float64(cellSize)/2, float64(y)+float64(cellSize)/2) // move origin back to top-left + position
-				}
-
-				screen.DrawImage(img, op)
-			} else {
-				// Normal cell
-				img := r.Images[cell.Type]
-				op := &ebiten.DrawImageOptions{}
-				op.GeoM.Translate(float64(x), float64(y))
-				screen.DrawImage(img, op)
-			}
-
-			// Treasure overlay
-			if m.TreasureOnMap && m.TreasureRow == row && m.TreasureCol == col {
-				tOp := &ebiten.DrawImageOptions{}
-				tOp.GeoM.Translate(float64(x), float64(y))
-				if cell.Type == maze.Armory || cell.Type == maze.Hole || cell.Type == maze.Hospital {
-					screen.DrawImage(r.Treasure, tOp)
-				} else {
-					screen.DrawImage(r.Treasure_big, tOp)
+	if cell.Type == maze.River {
+		var prevDir maze.Direction
+		foundPrev := false
+		for _, d := range []maze.Direction{maze.Up, maze.Right, maze.Down, maze.Left} {
+			dr, dc := maze.Delta(d)
+			pr, pc := row+dr, col+dc
+			if m.InBounds(pr, pc) && m.Grid[pr][pc].Type == maze.River {
+				if m.Grid[pr][pc].RiverDir == maze.Opposite(d) {
+					prevDir = d
+					foundPrev = true
+					break
 				}
 			}
 		}
+		nextDir := dir
+		if foundPrev && prevDir != maze.Opposite(nextDir) {
+			img = r.RiverCorner
+			op.GeoM.Translate(-float64(cellSize)/2, -float64(cellSize)/2)
+			switch {
+			case prevDir == maze.Down && nextDir == maze.Right,
+				prevDir == maze.Right && nextDir == maze.Down:
+				op.GeoM.Rotate(0)
+			case prevDir == maze.Right && nextDir == maze.Up,
+				prevDir == maze.Up && nextDir == maze.Right:
+				op.GeoM.Rotate(3 * math.Pi / 2)
+			case prevDir == maze.Up && nextDir == maze.Left,
+				prevDir == maze.Left && nextDir == maze.Up:
+				op.GeoM.Rotate(math.Pi)
+			case prevDir == maze.Left && nextDir == maze.Down,
+				prevDir == maze.Down && nextDir == maze.Left:
+				op.GeoM.Rotate(math.Pi / 2)
+			}
+			op.GeoM.Translate(float64(x)+float64(cellSize)/2, float64(y)+float64(cellSize)/2)
+		} else {
+			img = r.Images[cell.Type]
+			if dir == maze.Up || dir == maze.Down {
+				op.GeoM.Translate(-float64(cellSize)/2, -float64(cellSize)/2)
+				op.GeoM.Rotate(math.Pi / 2)
+				op.GeoM.Translate(float64(x)+float64(cellSize)/2, float64(y)+float64(cellSize)/2)
+			} else {
+				op.GeoM.Translate(float64(x), float64(y))
+			}
+		}
+	} else if cell.Type == maze.Estuary {
+		img = r.Images[cell.Type]
+		op.GeoM.Translate(-float64(cellSize)/2, -float64(cellSize)/2)
+		switch dir {
+		case maze.Up:
+			op.GeoM.Rotate(-math.Pi / 2)
+		case maze.Down:
+			op.GeoM.Rotate(math.Pi / 2)
+		case maze.Left:
+			op.GeoM.Rotate(math.Pi)
+		case maze.Right:
+		}
+		op.GeoM.Translate(float64(x)+float64(cellSize)/2, float64(y)+float64(cellSize)/2)
 	}
+	screen.DrawImage(img, op)
+}
 
+func (r *RevealScreen) drawInnerWalls(screen *ebiten.Image, m *maze.Maze, ox, oy int) {
 	halfWall := float64(wallOffset) / 2
-
-	// 1. Draw inner walls first (between cells)
 	for row := 0; row < m.Size; row++ {
 		for col := 0; col < m.Size; col++ {
 			x := ox + col*cellSize
 			y := oy + row*cellSize
 			cell := m.Grid[row][col]
 
-			// vertical inner wall (right)
 			if cell.Walls[maze.Right] && col < m.Size-1 {
-				wallOp := &ebiten.DrawImageOptions{}
-				wallOp.GeoM.Translate(float64(x+cellSize)-halfWall, float64(y)-halfWall)
-				screen.DrawImage(r.WallV, wallOp)
+				op := &ebiten.DrawImageOptions{}
+				op.GeoM.Translate(float64(x+cellSize)-halfWall, float64(y)-halfWall)
+				screen.DrawImage(r.WallV, op)
 			}
-			// horizontal inner wall (down)
 			if cell.Walls[maze.Down] && row < m.Size-1 {
-				wallOp := &ebiten.DrawImageOptions{}
-				wallOp.GeoM.Translate(float64(x)-halfWall, float64(y+cellSize)-halfWall)
-				screen.DrawImage(r.WallH, wallOp)
+				op := &ebiten.DrawImageOptions{}
+				op.GeoM.Translate(float64(x)-halfWall, float64(y+cellSize)-halfWall)
+				screen.DrawImage(r.WallH, op)
 			}
 		}
 	}
+}
 
-	// Left and right vertical borders
+func (r *RevealScreen) drawBorderWalls(screen *ebiten.Image, m *maze.Maze, ox, oy int) {
+	halfWall := float64(wallOffset) / 2
+
 	for row := 0; row < m.Size; row++ {
 		y := oy + row*cellSize
+		opL := &ebiten.DrawImageOptions{}
+		opL.GeoM.Translate(float64(ox)-halfWall, float64(y)-halfWall)
+		screen.DrawImage(r.WallV, opL)
 
-		// Left border wall, shifted half outside to the left (negative)
-		wallOpLeft := &ebiten.DrawImageOptions{}
-		wallOpLeft.GeoM.Translate(float64(ox)-halfWall, float64(y)-halfWall)
-		screen.DrawImage(r.WallV, wallOpLeft)
-
-		// Right border wall, shifted half inside the last cell
-		wallOpRight := &ebiten.DrawImageOptions{}
-		wallOpRight.GeoM.Translate(float64(ox+m.Size*cellSize)-halfWall, float64(y)-halfWall)
-		screen.DrawImage(r.WallV, wallOpRight)
+		opR := &ebiten.DrawImageOptions{}
+		opR.GeoM.Translate(float64(ox+m.Size*cellSize)-halfWall, float64(y)-halfWall)
+		screen.DrawImage(r.WallV, opR)
 	}
 
-	// Top and bottom horizontal borders
 	for col := 0; col < m.Size; col++ {
 		x := ox + col*cellSize
+		opT := &ebiten.DrawImageOptions{}
+		opT.GeoM.Translate(float64(x)-halfWall, float64(oy)-halfWall)
+		screen.DrawImage(r.WallH, opT)
 
-		// Top border wall, shifted half outside above the maze
-		wallOpTop := &ebiten.DrawImageOptions{}
-		wallOpTop.GeoM.Translate(float64(x)-halfWall, float64(oy)-halfWall)
-		screen.DrawImage(r.WallH, wallOpTop)
-
-		// Bottom border wall, shifted half inside the last row cell
-		wallOpBottom := &ebiten.DrawImageOptions{}
-		wallOpBottom.GeoM.Translate(float64(x)-halfWall, float64(oy+m.Size*cellSize)-halfWall)
-		screen.DrawImage(r.WallH, wallOpBottom)
+		opB := &ebiten.DrawImageOptions{}
+		opB.GeoM.Translate(float64(x)-halfWall, float64(oy+m.Size*cellSize)-halfWall)
+		screen.DrawImage(r.WallH, opB)
 	}
-
 }
 
 func loadImage(path string) *ebiten.Image {

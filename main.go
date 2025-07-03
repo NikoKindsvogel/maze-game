@@ -10,7 +10,7 @@ import (
 
 func main() {
 	g := ebiten_ui.NewUIManager()
-	ebiten.SetWindowSize(1600, 800)
+	ebiten.SetWindowSize(1200, 900)
 	ebiten.SetWindowTitle("Maze Game")
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
