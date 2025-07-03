@@ -4,6 +4,7 @@ import (
 	"image"
 	"log"
 	"math"
+	"maze-game/game"
 	"maze-game/maze"
 	"os"
 
@@ -23,8 +24,8 @@ const (
 )
 
 type RevealScreen struct {
-	StartMaze    *maze.Maze
-	FinalMaze    *maze.Maze
+	StartGame    *game.Game
+	FinalGame    *game.Game
 	Images       map[maze.CellType]*ebiten.Image
 	WallH        *ebiten.Image
 	WallV        *ebiten.Image
@@ -33,30 +34,28 @@ type RevealScreen struct {
 	RiverCorner  *ebiten.Image
 	ShowCurrent  bool
 	mouseWasDown bool
+	PlayerImages []*ebiten.Image // index 0-7 for 8 players
 }
 
-func NewRevealScreen(start, final *maze.Maze) *RevealScreen {
+func NewRevealScreen(start, final *game.Game) *RevealScreen {
 	images := loadCellImages()
+	playerImages := loadPlayerImages()
 	wallH := loadImage("assets/wall_horizontal_long.png")
 	wallV := loadImage("assets/wall_vertical_long.png")
 	treasure := loadImage("assets/treasure.png")
 	treasure_big := loadImage("assets/cell_treasure.png")
 	river_corner := loadImage("assets/cell_river_corner.png")
 
-	// for testing:
-	// wallH := createWallImage(cellSize, 8, color.RGBA{0, 0, 0, 255}) // black horizontal wall
-	// wallV := createWallImage(8, cellSize, color.RGBA{0, 0, 0, 255}) // black vertical wall
-	// treasure := createColoredImage(color.RGBA{255, 215, 0, 128})    // semi-transparent gold
-
 	return &RevealScreen{
-		StartMaze:    start,
-		FinalMaze:    final,
+		StartGame:    start,
+		FinalGame:    final,
 		Images:       images,
 		WallH:        wallH,
 		WallV:        wallV,
 		Treasure:     treasure,
 		Treasure_big: treasure_big,
 		RiverCorner:  river_corner,
+		PlayerImages: playerImages,
 	}
 }
 
@@ -85,13 +84,15 @@ func (r *RevealScreen) Draw(screen *ebiten.Image) {
 
 	// Draw maze based on toggle
 	if r.ShowCurrent {
-		r.drawMaze(screen, r.FinalMaze, offsetX, offsetY)
+		r.drawGame(screen, r.FinalGame, offsetX, offsetY)
 	} else {
-		r.drawMaze(screen, r.StartMaze, offsetX, offsetY)
+		r.drawGame(screen, r.StartGame, offsetX, offsetY)
 	}
 }
 
-func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) {
+func (r *RevealScreen) drawGame(screen *ebiten.Image, g *game.Game, ox, oy int) {
+	m := g.GetMaze()
+	players := g.Players
 	for row := 0; row < m.Size; row++ {
 		for col := 0; col < m.Size; col++ {
 			r.drawCell(screen, m, row, col, ox, oy)
@@ -99,6 +100,7 @@ func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) 
 	}
 	r.drawInnerWalls(screen, m, ox, oy)
 	r.drawBorderWalls(screen, m, ox, oy)
+	r.drawPlayers(screen, ox, oy, players)
 }
 
 func (r *RevealScreen) drawCell(screen *ebiten.Image, m *maze.Maze, row, col, ox, oy int) {
@@ -261,6 +263,21 @@ func (r *RevealScreen) drawBorderWalls(screen *ebiten.Image, m *maze.Maze, ox, o
 	}
 }
 
+func (r *RevealScreen) drawPlayers(screen *ebiten.Image, ox, oy int, players []*game.Player) {
+	for i, player := range players {
+		if i >= len(r.PlayerImages) {
+			continue // ignore extra players beyond available images
+		}
+		img := r.PlayerImages[i]
+		x := ox + player.Col*cellSize
+		y := oy + player.Row*cellSize
+
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(x), float64(y))
+		screen.DrawImage(img, op)
+	}
+}
+
 func loadImage(path string) *ebiten.Image {
 	f, err := os.Open(path)
 	if err != nil {
@@ -284,5 +301,18 @@ func loadCellImages() map[maze.CellType]*ebiten.Image {
 		maze.Armory:   loadImage("assets/cell_armory.png"),
 		maze.River:    loadImage("assets/cell_river.png"),
 		maze.Estuary:  loadImage("assets/cell_estuary.png"),
+	}
+}
+
+func loadPlayerImages() []*ebiten.Image {
+	return []*ebiten.Image{
+		loadImage("assets/players/player_male_yellow.png"),
+		loadImage("assets/players/player_female_blue.png"),
+		loadImage("assets/players/player_male_blue.png"),
+		loadImage("assets/players/player_female_green.png"),
+		loadImage("assets/players/player_male_green.png"),
+		loadImage("assets/players/player_female_yellow.png"),
+		loadImage("assets/players/player_male_red.png"),
+		loadImage("assets/players/player_female_red.png"),
 	}
 }

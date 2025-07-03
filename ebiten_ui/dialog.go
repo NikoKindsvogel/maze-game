@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image/color"
 	"maze-game/game"
-	"maze-game/maze"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -17,7 +16,7 @@ type DialogScreen struct {
 	Input     string
 	Messages  []string
 	Done      bool
-	startMaze maze.Maze
+	startGame game.Game
 
 	KeyWasDown map[ebiten.Key]bool
 }
@@ -27,7 +26,7 @@ func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
 	return &DialogScreen{
 		Game:      g,
 		Messages:  []string{"Game started. Use commands like: UP, DOWN, LEFT, RIGHT, SHOOT <dir>, SHOW, EXIT"},
-		startMaze: *maze.CopyMaze(g.GetMaze()),
+		startGame: *g.Copy(),
 		KeyWasDown: map[ebiten.Key]bool{
 			ebiten.KeyArrowUp:    false,
 			ebiten.KeyArrowDown:  false,
@@ -134,7 +133,7 @@ func (d *DialogScreen) processCommand(input string) {
 				d.appendMessage("Error loading game: " + err.Error())
 			} else {
 				*d.Game = *newGame
-				d.startMaze = *maze.CopyMaze(newGame.GetMaze())
+				d.startGame = *newGame.Copy()
 				d.appendMessage("Game loaded from " + arg)
 			}
 			return
