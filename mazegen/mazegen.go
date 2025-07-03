@@ -28,7 +28,7 @@ func GenerateMaze(cfg MazeConfig) *maze.Maze {
 	carveMaze(m)
 	openUpMaze(m, cfg.ExtraOpenings)
 
-	placeRandomCellOfType(m, maze.Exit)
+	placeRandomEdgeCellOfType(m, maze.Exit)
 
 	for i := 0; i < cfg.NumHoles; i++ {
 		placeRandomCellOfType(m, maze.Hole)

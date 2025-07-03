@@ -41,6 +41,33 @@ func placeRandomCellOfType(m *maze.Maze, t maze.CellType) {
 	}
 }
 
+func placeRandomEdgeCellOfType(m *maze.Maze, t maze.CellType) {
+	for {
+		var r, c int
+		edge := rand.Intn(4) // 0=top row, 1=bottom row, 2=left col, 3=right col
+
+		switch edge {
+		case 0: // top row
+			r = 0
+			c = rand.Intn(m.Size)
+		case 1: // bottom row
+			r = m.Size - 1
+			c = rand.Intn(m.Size)
+		case 2: // left column
+			r = rand.Intn(m.Size)
+			c = 0
+		case 3: // right column
+			r = rand.Intn(m.Size)
+			c = m.Size - 1
+		}
+
+		if m.Grid[r][c].Type == maze.Empty {
+			m.Grid[r][c].Type = t
+			return
+		}
+	}
+}
+
 func placeTreasure(m *maze.Maze, minDist int) {
 	type point struct{ r, c int }
 
