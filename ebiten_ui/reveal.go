@@ -162,17 +162,22 @@ func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) 
 				screen.DrawImage(img, op)
 			}
 
-			// Draw walls
-			if cell.Walls[maze.Right] && col < m.Size-1 {
-				wallOp := &ebiten.DrawImageOptions{}
-				wallOp.GeoM.Translate(float64(x+cellSize-wallOffset), float64(y))
-				screen.DrawImage(r.WallV, wallOp)
-			}
-			if cell.Walls[maze.Down] && row < m.Size-1 {
-				wallOp := &ebiten.DrawImageOptions{}
-				wallOp.GeoM.Translate(float64(x), float64(y+cellSize-wallOffset))
-				screen.DrawImage(r.WallH, wallOp)
-			}
+			// // Draw walls
+			// // Vertical wall on the right between cells (col and col+1)
+			// if cell.Walls[maze.Right] && col < m.Size-1 {
+			// 	wallOp := &ebiten.DrawImageOptions{}
+			// 	// Shift left by half wall thickness to center wall on border
+			// 	wallOp.GeoM.Translate(float64(x+cellSize)-float64(wallOffset)/2, float64(y))
+			// 	screen.DrawImage(r.WallV, wallOp)
+			// }
+
+			// // Horizontal wall on the bottom between cells (row and row+1)
+			// if cell.Walls[maze.Down] && row < m.Size-1 {
+			// 	wallOp := &ebiten.DrawImageOptions{}
+			// 	// Shift up by half wall thickness to center wall on border
+			// 	wallOp.GeoM.Translate(float64(x), float64(y+cellSize)-float64(wallOffset)/2)
+			// 	screen.DrawImage(r.WallH, wallOp)
+			// }
 
 			// Treasure overlay
 			if m.TreasureOnMap && m.TreasureRow == row && m.TreasureCol == col {
@@ -182,6 +187,61 @@ func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) 
 			}
 		}
 	}
+
+	halfWall := float64(wallOffset) / 2
+
+	// 1. Draw inner walls first (between cells)
+	for row := 0; row < m.Size; row++ {
+		for col := 0; col < m.Size; col++ {
+			x := ox + col*cellSize
+			y := oy + row*cellSize
+			cell := m.Grid[row][col]
+
+			// vertical inner wall (right)
+			if cell.Walls[maze.Right] && col < m.Size-1 {
+				wallOp := &ebiten.DrawImageOptions{}
+				wallOp.GeoM.Translate(float64(x+cellSize)-halfWall, float64(y))
+				screen.DrawImage(r.WallV, wallOp)
+			}
+			// horizontal inner wall (down)
+			if cell.Walls[maze.Down] && row < m.Size-1 {
+				wallOp := &ebiten.DrawImageOptions{}
+				wallOp.GeoM.Translate(float64(x), float64(y+cellSize)-halfWall)
+				screen.DrawImage(r.WallH, wallOp)
+			}
+		}
+	}
+
+	// Left and right vertical borders
+	for row := 0; row < m.Size; row++ {
+		y := oy + row*cellSize
+
+		// Left border wall, shifted half outside to the left (negative)
+		wallOpLeft := &ebiten.DrawImageOptions{}
+		wallOpLeft.GeoM.Translate(float64(ox)-halfWall, float64(y))
+		screen.DrawImage(r.WallV, wallOpLeft)
+
+		// Right border wall, shifted half inside the last cell
+		wallOpRight := &ebiten.DrawImageOptions{}
+		wallOpRight.GeoM.Translate(float64(ox+m.Size*cellSize)-halfWall, float64(y))
+		screen.DrawImage(r.WallV, wallOpRight)
+	}
+
+	// Top and bottom horizontal borders
+	for col := 0; col < m.Size; col++ {
+		x := ox + col*cellSize
+
+		// Top border wall, shifted half outside above the maze
+		wallOpTop := &ebiten.DrawImageOptions{}
+		wallOpTop.GeoM.Translate(float64(x), float64(oy)-halfWall)
+		screen.DrawImage(r.WallH, wallOpTop)
+
+		// Bottom border wall, shifted half inside the last row cell
+		wallOpBottom := &ebiten.DrawImageOptions{}
+		wallOpBottom.GeoM.Translate(float64(x), float64(oy+m.Size*cellSize)-halfWall)
+		screen.DrawImage(r.WallH, wallOpBottom)
+	}
+
 }
 
 func drawRotatedImage(dst *ebiten.Image, img *ebiten.Image, x, y int, angle float64) {
