@@ -2,28 +2,39 @@ package ebiten_ui
 
 import (
 	"image"
+	"image/color"
 	"log"
 	"math"
 	"maze-game/maze"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text"
+	"golang.org/x/image/font/basicfont"
 )
 
 const (
 	cellSize   = 64 // width and height of each cell image
 	wallOffset = 8  // half-width for wall overlap
 	spacing    = 20 // space between the two mazes
+	buttonX    = 20
+	buttonY    = 20
+	buttonW    = 140
+	buttonH    = 40
+	offsetX    = 100
+	offsetY    = 100
 )
 
 type RevealScreen struct {
-	StartMaze   *maze.Maze
-	FinalMaze   *maze.Maze
-	Images      map[maze.CellType]*ebiten.Image
-	WallH       *ebiten.Image
-	WallV       *ebiten.Image
-	Treasure    *ebiten.Image
-	RiverCorner *ebiten.Image
+	StartMaze    *maze.Maze
+	FinalMaze    *maze.Maze
+	Images       map[maze.CellType]*ebiten.Image
+	WallH        *ebiten.Image
+	WallV        *ebiten.Image
+	Treasure     *ebiten.Image
+	RiverCorner  *ebiten.Image
+	ShowCurrent  bool
+	mouseWasDown bool
 }
 
 func NewRevealScreen(start, final *maze.Maze) *RevealScreen {
@@ -49,16 +60,43 @@ func NewRevealScreen(start, final *maze.Maze) *RevealScreen {
 	}
 }
 
-func (r *RevealScreen) Update() {
-	// Optional: support switching views
+func (r *RevealScreen) Update() error {
+	mouseDown := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+	x, y := ebiten.CursorPosition()
+
+	if mouseDown && !r.mouseWasDown {
+		// Mouse just pressed — check if it hit the button
+		if x >= buttonX && x <= buttonX+buttonW && y >= buttonY && y <= buttonY+buttonH {
+			r.ShowCurrent = !r.ShowCurrent
+		}
+	}
+
+	r.mouseWasDown = mouseDown
+	return nil
 }
 
 func (r *RevealScreen) Draw(screen *ebiten.Image) {
-	offsetX := 50
-	offsetY := 50
+	// Draw button
+	btnColor := color.RGBA{R: 100, G: 100, B: 255, A: 255}
+	btnRect := ebiten.NewImage(buttonW, buttonH)
+	btnRect.Fill(btnColor)
 
-	r.drawMaze(screen, r.StartMaze, offsetX, offsetY)
-	r.drawMaze(screen, r.FinalMaze, offsetX+cellSize*r.StartMaze.Size+spacing, offsetY)
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(float64(buttonX), float64(buttonY))
+	screen.DrawImage(btnRect, op)
+
+	textToShow := "Show Start"
+	if !r.ShowCurrent {
+		textToShow = "Show Current"
+	}
+	text.Draw(screen, textToShow, basicfont.Face7x13, buttonX+10, buttonY+25, color.White)
+
+	// Draw maze based on toggle
+	if r.ShowCurrent {
+		r.drawMaze(screen, r.FinalMaze, offsetX, offsetY)
+	} else {
+		r.drawMaze(screen, r.StartMaze, offsetX, offsetY)
+	}
 }
 
 func (r *RevealScreen) drawMaze(screen *ebiten.Image, m *maze.Maze, ox, oy int) {
