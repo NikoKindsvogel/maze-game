@@ -19,14 +19,14 @@ const (
 	ScreenDialog
 	ScreenGame
 	ScreenReveal
-	xMargin              = 210
-	yMargin              = 90
-	fontSize             = 20
-	headlineSize         = 24
-	lineHeight           = 24
-	HeadlineHeight       = 28
-	sideButtonWidth      = 116
-	sideExitButtonHeight = 74
+	xMargin          = 210
+	yMargin          = 90
+	fontSize         = 20
+	headlineSize     = 24
+	lineHeight       = 24
+	HeadlineHeight   = 28
+	sideButtonWidth  = 116
+	sideButtonHeight = 74
 )
 
 type UIManager struct {

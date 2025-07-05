@@ -23,21 +23,25 @@ const (
 const (
 	revealExitButtonX = screenWidth - 130
 	revealExitButtonY = screenHeight - 150
+	revealShowButtonX = screenWidth - 130
+	revealShowButtonY = screenHeight - 250
 )
 
 type RevealScreen struct {
-	StartGame    *game.Game
-	FinalGame    *game.Game
-	Images       map[maze.CellType]*ebiten.Image
-	WallH        *ebiten.Image
-	WallV        *ebiten.Image
-	Treasure     *ebiten.Image
-	Treasure_big *ebiten.Image
-	RiverCorner  *ebiten.Image
-	ShowCurrent  bool
-	PlayerImages []*ebiten.Image
-	Background   *ebiten.Image
-	ExitButton   *ebiten.Image
+	StartGame       *game.Game
+	FinalGame       *game.Game
+	Images          map[maze.CellType]*ebiten.Image
+	WallH           *ebiten.Image
+	WallV           *ebiten.Image
+	Treasure        *ebiten.Image
+	Treasure_big    *ebiten.Image
+	RiverCorner     *ebiten.Image
+	ShowCurrent     bool
+	PlayerImages    []*ebiten.Image
+	Background      *ebiten.Image
+	ExitButton      *ebiten.Image
+	ShowNowButton   *ebiten.Image
+	ShowStartButton *ebiten.Image
 }
 
 func NewRevealScreen(start, final *game.Game) *RevealScreen {
@@ -50,19 +54,23 @@ func NewRevealScreen(start, final *game.Game) *RevealScreen {
 	river_corner := loadImage("assets/cells/cell_river_corner.png")
 	bgImage := loadImage("assets/backgrounds/background.png")
 	exitButton := loadImage("assets/buttons/reveal_button_exitgame.png")
+	showNowButton := loadImage("assets/buttons/reveal_button_shownow.png")
+	showStartButton := loadImage("assets/buttons/reveal_button_showstart.png")
 
 	return &RevealScreen{
-		StartGame:    start,
-		FinalGame:    final,
-		Images:       images,
-		WallH:        wallH,
-		WallV:        wallV,
-		Treasure:     treasure,
-		Treasure_big: treasure_big,
-		RiverCorner:  river_corner,
-		PlayerImages: playerImages,
-		Background:   bgImage,
-		ExitButton:   exitButton,
+		StartGame:       start,
+		FinalGame:       final,
+		Images:          images,
+		WallH:           wallH,
+		WallV:           wallV,
+		Treasure:        treasure,
+		Treasure_big:    treasure_big,
+		RiverCorner:     river_corner,
+		PlayerImages:    playerImages,
+		Background:      bgImage,
+		ExitButton:      exitButton,
+		ShowNowButton:   showNowButton,
+		ShowStartButton: showStartButton,
 	}
 }
 
@@ -72,8 +80,12 @@ func (r *RevealScreen) Update(u *UIManager) error {
 
 	if mouseDown && !u.mouseWasDown {
 		if x >= revealExitButtonX && x <= revealExitButtonX+sideButtonWidth &&
-			y >= revealExitButtonY && y <= revealExitButtonY+sideExitButtonHeight {
+			y >= revealExitButtonY && y <= revealExitButtonY+sideButtonHeight {
 			u.screen = ScreenStart
+		}
+		if x >= revealShowButtonX && x <= revealShowButtonX+sideButtonWidth &&
+			y >= revealShowButtonY && y <= revealShowButtonY+sideButtonHeight {
+			r.ShowCurrent = !r.ShowCurrent
 		}
 	}
 
@@ -88,12 +100,6 @@ func (r *RevealScreen) Draw(screen *ebiten.Image) {
 		screen.DrawImage(r.Background, op)
 	}
 
-	if !r.ShowCurrent {
-		drawButton(screen, buttonX, buttonY, startButtonWidth, startButtonHeight, "Show Current")
-	} else {
-		drawButton(screen, buttonX, buttonY, startButtonWidth, startButtonHeight, "Show Start")
-	}
-
 	// Draw maze based on toggle
 	if r.ShowCurrent {
 		r.drawGame(screen, r.FinalGame, offsetX, offsetY)
@@ -101,7 +107,13 @@ func (r *RevealScreen) Draw(screen *ebiten.Image) {
 		r.drawGame(screen, r.StartGame, offsetX, offsetY)
 	}
 
-	drawButtonWithImage(screen, revealExitButtonX, revealExitButtonY, sideButtonWidth, sideExitButtonHeight, "", r.ExitButton)
+	if !r.ShowCurrent {
+		drawButtonWithImage(screen, revealShowButtonX, revealShowButtonY, sideButtonWidth, sideButtonHeight, "", r.ShowNowButton)
+	} else {
+		drawButtonWithImage(screen, revealShowButtonX, revealShowButtonY, sideButtonWidth, sideButtonHeight, "", r.ShowStartButton)
+	}
+
+	drawButtonWithImage(screen, revealExitButtonX, revealExitButtonY, sideButtonWidth, sideButtonHeight, "", r.ExitButton)
 }
 
 func (r *RevealScreen) drawGame(screen *ebiten.Image, g *game.Game, ox, oy int) {

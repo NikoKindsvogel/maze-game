@@ -83,7 +83,7 @@ func (d *DialogScreen) Update(u *UIManager) {
 
 	if mouseDown && !u.mouseWasDown {
 		if x >= dialogExitButtonX && x <= dialogExitButtonX+sideButtonWidth &&
-			y >= dialogExitButtonY && y <= dialogExitButtonY+sideExitButtonHeight {
+			y >= dialogExitButtonY && y <= dialogExitButtonY+sideButtonHeight {
 			d.Done = true
 		}
 	}
@@ -208,5 +208,5 @@ func (d *DialogScreen) Draw(screen *ebiten.Image) {
 	text.Draw(screen, turnInfo, MainFont, xMargin, height-yMargin-HeadlineHeight, color.RGBA{200, 200, 0, 255})
 	text.Draw(screen, inputLine, MainFont, xMargin, height-yMargin, color.White)
 
-	drawButtonWithImage(screen, dialogExitButtonX, dialogExitButtonY, sideButtonWidth, sideExitButtonHeight, "", d.ExitButton)
+	drawButtonWithImage(screen, dialogExitButtonX, dialogExitButtonY, sideButtonWidth, sideButtonHeight, "", d.ExitButton)
 }
