@@ -1,12 +1,14 @@
 package ebiten_ui
 
 import (
+	"image/color"
 	"math"
 	"maze-game/game"
 	"maze-game/maze"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text"
 )
 
 const (
@@ -27,25 +29,27 @@ const (
 )
 
 type RevealScreen struct {
-	StartGame       *game.Game
-	FinalGame       *game.Game
-	Images          map[maze.CellType]*ebiten.Image
-	WallH           *ebiten.Image
-	WallV           *ebiten.Image
-	Treasure        *ebiten.Image
-	Treasure_big    *ebiten.Image
-	RiverCorner     *ebiten.Image
-	ShowCurrent     bool
-	PlayerImages    []*ebiten.Image
-	Background      *ebiten.Image
-	ExitButton      *ebiten.Image
-	ShowNowButton   *ebiten.Image
-	ShowStartButton *ebiten.Image
+	StartGame        *game.Game
+	FinalGame        *game.Game
+	Images           map[maze.CellType]*ebiten.Image
+	WallH            *ebiten.Image
+	WallV            *ebiten.Image
+	Treasure         *ebiten.Image
+	Treasure_big     *ebiten.Image
+	RiverCorner      *ebiten.Image
+	ShowCurrent      bool
+	PlayerImages     []*ebiten.Image
+	PlayerImagePaths []string
+	Background       *ebiten.Image
+	ExitButton       *ebiten.Image
+	ShowNowButton    *ebiten.Image
+	ShowStartButton  *ebiten.Image
+	PlayerBackground *ebiten.Image
 }
 
 func NewRevealScreen(start, final *game.Game) *RevealScreen {
 	images := loadCellImages()
-	playerImages := loadPlayerImages()
+	playerImages, playerImagePaths := loadPlayerImages()
 	wallH := loadImage("assets/walls/wall_horizontal_long.png")
 	wallV := loadImage("assets/walls/wall_vertical_long.png")
 	treasure := loadImage("assets/cells/treasure.png")
@@ -55,21 +59,24 @@ func NewRevealScreen(start, final *game.Game) *RevealScreen {
 	exitButton := loadImage("assets/buttons/reveal_button_exitgame.png")
 	showNowButton := loadImage("assets/buttons/reveal_button_shownow.png")
 	showStartButton := loadImage("assets/buttons/reveal_button_showstart.png")
+	playerBackground := loadImage("assets/buttons/reveal_button_playercolor.png")
 
 	return &RevealScreen{
-		StartGame:       start,
-		FinalGame:       final,
-		Images:          images,
-		WallH:           wallH,
-		WallV:           wallV,
-		Treasure:        treasure,
-		Treasure_big:    treasure_big,
-		RiverCorner:     river_corner,
-		PlayerImages:    playerImages,
-		Background:      bgImage,
-		ExitButton:      exitButton,
-		ShowNowButton:   showNowButton,
-		ShowStartButton: showStartButton,
+		StartGame:        start,
+		FinalGame:        final,
+		Images:           images,
+		WallH:            wallH,
+		WallV:            wallV,
+		Treasure:         treasure,
+		Treasure_big:     treasure_big,
+		RiverCorner:      river_corner,
+		PlayerImages:     playerImages,
+		PlayerImagePaths: playerImagePaths,
+		Background:       bgImage,
+		ExitButton:       exitButton,
+		ShowNowButton:    showNowButton,
+		ShowStartButton:  showStartButton,
+		PlayerBackground: playerBackground,
 	}
 }
 
@@ -293,17 +300,38 @@ func (r *RevealScreen) drawBorderWalls(screen *ebiten.Image, m *maze.Maze, ox, o
 }
 
 func (r *RevealScreen) drawPlayers(screen *ebiten.Image, ox, oy int, players []*game.Player) {
+	legendX := 20
+	legendY := 20
+	lineHeight := 50 // spacing between entries (including background)
+
 	for i, player := range players {
 		if i >= len(r.PlayerImages) {
-			continue // ignore extra players beyond available images
+			continue // ignore extra players
 		}
+
+		// --- Draw player on maze ---
 		img := r.PlayerImages[i]
 		x := ox + player.Col*cellSize
 		y := oy + player.Row*cellSize
-
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(x), float64(y))
 		screen.DrawImage(img, op)
+
+		// --- Extract color from image filename ---
+		color := "unknown"
+		if i < len(r.PlayerImagePaths) {
+			color = extractColorFromFilename(r.PlayerImagePaths[i])
+		}
+
+		// --- Draw background for legend item ---
+		bgOp := &ebiten.DrawImageOptions{}
+		bgOp.GeoM.Translate(float64(legendX), float64(legendY+i*lineHeight))
+		screen.DrawImage(r.PlayerBackground, bgOp)
+
+		// --- Draw player name + color on top of background ---
+		textX := legendX + 10
+		textY := legendY + i*lineHeight + 30 // vertical offset inside background
+		text.Draw(screen, player.ID, MainFont, textX, textY, colorRGBA(color))
 	}
 }
 
@@ -320,23 +348,46 @@ func loadCellImages() map[maze.CellType]*ebiten.Image {
 	}
 }
 
-func loadPlayerImages() []*ebiten.Image {
-	return []*ebiten.Image{
-		loadImage("assets/players/player_male_yellow.png"),
-		loadImage("assets/players/player_female_blue.png"),
-		loadImage("assets/players/player_male_blue.png"),
-		loadImage("assets/players/player_female_green.png"),
-		loadImage("assets/players/player_male_green.png"),
-		loadImage("assets/players/player_female_yellow.png"),
-		loadImage("assets/players/player_male_red.png"),
-		loadImage("assets/players/player_female_red.png"),
+func colorRGBA(name string) color.Color {
+	switch strings.ToLower(name) {
+	case "red":
+		return color.RGBA{R: 220, A: 255}
+	case "blue":
+		return color.RGBA{B: 220, A: 255}
+	case "green":
+		return color.RGBA{G: 200, A: 255}
+	case "yellow":
+		return color.RGBA{R: 240, G: 240, A: 255}
+	case "white":
+		return color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	case "magenta":
+		return color.RGBA{R: 235, G: 18, B: 234, A: 255}
+	case "cyan":
+		return color.RGBA{R: 19, G: 235, B: 233, A: 255}
+	case "black":
+		return color.RGBA{R: 0, G: 0, B: 0, A: 255}
+	default:
+		return color.White
 	}
 }
 
-// Example: from "player_female_red.png" => "red"
+func loadPlayerImages() ([]*ebiten.Image, []string) {
+	paths := []string{
+		"assets/players2/player_cyan.png",
+		"assets/players2/player_magenta.png",
+		"assets/players2/player_white.png",
+		"assets/players2/player_yellow.png",
+	}
+	images := make([]*ebiten.Image, len(paths))
+	for i, path := range paths {
+		images[i] = loadImage(path)
+	}
+	return images, paths
+}
+
 func extractColorFromFilename(filename string) string {
-	base := strings.TrimSuffix(filename, ".png")
-	parts := strings.Split(base, "_")
+	filename = strings.TrimSuffix(filename, ".png")
+	parts := strings.Split(filename, "_")
 	if len(parts) > 0 {
 		return parts[len(parts)-1]
 	}
