@@ -24,7 +24,7 @@ type DialogScreen struct {
 
 func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
 	g := game.NewGameWithConfig(size, holes, riverPush, names)
-	bgImage := loadImage("assets/background.png")
+	bgImage := loadImage("assets/backgrounds/background.png")
 	return &DialogScreen{
 		Game:      g,
 		Messages:  []string{"Game started. Use commands like: UP, DOWN, LEFT, RIGHT, SHOOT <dir>, EXIT"},

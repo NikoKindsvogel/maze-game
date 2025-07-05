@@ -38,12 +38,12 @@ type RevealScreen struct {
 func NewRevealScreen(start, final *game.Game) *RevealScreen {
 	images := loadCellImages()
 	playerImages := loadPlayerImages()
-	wallH := loadImage("assets/wall_horizontal_long.png")
-	wallV := loadImage("assets/wall_vertical_long.png")
-	treasure := loadImage("assets/treasure.png")
-	treasure_big := loadImage("assets/cell_treasure.png")
-	river_corner := loadImage("assets/cell_river_corner.png")
-	bgImage := loadImage("assets/background.png")
+	wallH := loadImage("assets/walls/wall_horizontal_long.png")
+	wallV := loadImage("assets/walls/wall_vertical_long.png")
+	treasure := loadImage("assets/cells/treasure.png")
+	treasure_big := loadImage("assets/cells/cell_treasure.png")
+	river_corner := loadImage("assets/cells/cell_river_corner.png")
+	bgImage := loadImage("assets/backgrounds/background.png")
 
 	return &RevealScreen{
 		StartGame:    start,
@@ -285,14 +285,14 @@ func (r *RevealScreen) drawPlayers(screen *ebiten.Image, ox, oy int, players []*
 
 func loadCellImages() map[maze.CellType]*ebiten.Image {
 	return map[maze.CellType]*ebiten.Image{
-		maze.Empty:    loadImage("assets/cell_empty.png"),
-		maze.Hospital: loadImage("assets/cell_hospital.png"),
-		maze.Exit:     loadImage("assets/cell_exit.png"),
-		maze.Hole:     loadImage("assets/cell_hole.png"),
-		maze.Dragon:   loadImage("assets/cell_dragon.png"),
-		maze.Armory:   loadImage("assets/cell_armory.png"),
-		maze.River:    loadImage("assets/cell_river.png"),
-		maze.Estuary:  loadImage("assets/cell_estuary.png"),
+		maze.Empty:    loadImage("assets/cells/cell_empty.png"),
+		maze.Hospital: loadImage("assets/cells/cell_hospital.png"),
+		maze.Exit:     loadImage("assets/cells/cell_exit.png"),
+		maze.Hole:     loadImage("assets/cells/cell_hole.png"),
+		maze.Dragon:   loadImage("assets/cells/cell_dragon.png"),
+		maze.Armory:   loadImage("assets/cells/cell_armory.png"),
+		maze.River:    loadImage("assets/cells/cell_river.png"),
+		maze.Estuary:  loadImage("assets/cells/cell_estuary.png"),
 	}
 }
 

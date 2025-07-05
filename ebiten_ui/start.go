@@ -26,9 +26,9 @@ const (
 )
 
 func NewStartScreen() *StartScreen {
-	bgImage := loadImage("assets/startscreen_background.png")
-	startImage := loadImage("assets/startscreen_button_new.png")
-	exitImage := loadImage("assets/startscreen_Button_load.png")
+	bgImage := loadImage("assets/backgrounds/startscreen_background.png")
+	startImage := loadImage("assets/buttons/startscreen_button_new.png")
+	exitImage := loadImage("assets/buttons/startscreen_button_exit.png")
 	return &StartScreen{
 		mouseWasDown: false,
 		Background:   bgImage,
