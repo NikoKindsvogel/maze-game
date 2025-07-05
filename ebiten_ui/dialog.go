@@ -10,6 +10,11 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text"
 )
 
+const (
+	dialogExitButtonX = screenWidth - 130
+	dialogExitButtonY = screenHeight - 150
+)
+
 type DialogScreen struct {
 	Game      *game.Game
 	Input     string
@@ -20,11 +25,13 @@ type DialogScreen struct {
 	KeyWasDown map[ebiten.Key]bool
 
 	Background *ebiten.Image
+	ExitButton *ebiten.Image
 }
 
 func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
 	g := game.NewGameWithConfig(size, holes, riverPush, names)
 	bgImage := loadImage("assets/backgrounds/background.png")
+	exitImage := loadImage("assets/buttons/dialog_button_exit.png")
 	return &DialogScreen{
 		Game:      g,
 		Messages:  []string{"Game started. Use commands like: UP, DOWN, LEFT, RIGHT, SHOOT <dir>, EXIT"},
@@ -37,10 +44,11 @@ func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
 			ebiten.KeyEnter:      false,
 		},
 		Background: bgImage,
+		ExitButton: exitImage,
 	}
 }
 
-func (d *DialogScreen) Update() {
+func (d *DialogScreen) Update(u *UIManager) {
 	// Handle text input
 	for _, key := range ebiten.InputChars() {
 		if key >= 32 && key <= 126 {
@@ -69,6 +77,18 @@ func (d *DialogScreen) Update() {
 	d.checkArrowKey(ebiten.KeyArrowDown, "DOWN")
 	d.checkArrowKey(ebiten.KeyArrowLeft, "LEFT")
 	d.checkArrowKey(ebiten.KeyArrowRight, "RIGHT")
+
+	mouseDown := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+	x, y := ebiten.CursorPosition()
+
+	if mouseDown && !u.mouseWasDown {
+		if x >= dialogExitButtonX && x <= dialogExitButtonX+sideButtonWidth &&
+			y >= dialogExitButtonY && y <= dialogExitButtonY+sideExitButtonHeight {
+			d.Done = true
+		}
+	}
+
+	u.mouseWasDown = mouseDown
 }
 
 func (d *DialogScreen) checkArrowKey(key ebiten.Key, command string) {
@@ -187,4 +207,6 @@ func (d *DialogScreen) Draw(screen *ebiten.Image) {
 	// Draw turn and input lines
 	text.Draw(screen, turnInfo, MainFont, xMargin, height-yMargin-HeadlineHeight, color.RGBA{200, 200, 0, 255})
 	text.Draw(screen, inputLine, MainFont, xMargin, height-yMargin, color.White)
+
+	drawButtonWithImage(screen, dialogExitButtonX, dialogExitButtonY, sideButtonWidth, sideExitButtonHeight, "", d.ExitButton)
 }

@@ -7,8 +7,6 @@ import (
 )
 
 type StartScreen struct {
-	mouseWasDown bool
-
 	Background  *ebiten.Image
 	StartButton *ebiten.Image
 	ExitButton  *ebiten.Image
@@ -18,8 +16,8 @@ const (
 	screenWidth  = 1200
 	screenHeight = 900
 
-	buttonWidth  = 484
-	buttonHeight = 47
+	startButtonWidth  = 484
+	startButtonHeight = 47
 
 	startButtonY = 500
 	exitButtonY  = 570
@@ -30,10 +28,9 @@ func NewStartScreen() *StartScreen {
 	startImage := loadImage("assets/buttons/startscreen_button_new.png")
 	exitImage := loadImage("assets/buttons/startscreen_button_exit.png")
 	return &StartScreen{
-		mouseWasDown: false,
-		Background:   bgImage,
-		StartButton:  startImage,
-		ExitButton:   exitImage,
+		Background:  bgImage,
+		StartButton: startImage,
+		ExitButton:  exitImage,
 	}
 }
 
@@ -41,20 +38,20 @@ func (s *StartScreen) Update(u *UIManager) error {
 	mouseDown := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 	x, y := ebiten.CursorPosition()
 
-	buttonX := (screenWidth - buttonWidth) / 2
+	buttonX := (screenWidth - startButtonWidth) / 2
 
-	if mouseDown && !s.mouseWasDown {
-		if x >= buttonX && x <= buttonX+buttonWidth &&
-			y >= startButtonY && y <= startButtonY+buttonHeight {
+	if mouseDown && !u.mouseWasDown {
+		if x >= buttonX && x <= buttonX+startButtonWidth &&
+			y >= startButtonY && y <= startButtonY+startButtonHeight {
 			u.screen = ScreenConfig
 		}
-		if x >= buttonX && x <= buttonX+buttonWidth &&
-			y >= exitButtonY && y <= exitButtonY+buttonHeight {
+		if x >= buttonX && x <= buttonX+startButtonWidth &&
+			y >= exitButtonY && y <= exitButtonY+startButtonHeight {
 			os.Exit(0)
 		}
 	}
 
-	s.mouseWasDown = mouseDown
+	u.mouseWasDown = mouseDown
 	return nil
 }
 
@@ -64,8 +61,8 @@ func (s *StartScreen) Draw(screen *ebiten.Image) {
 		screen.DrawImage(s.Background, op)
 	}
 
-	buttonX := (screenWidth - buttonWidth) / 2
+	buttonX := (screenWidth - startButtonWidth) / 2
 
-	drawButtonWithImage(screen, buttonX, startButtonY, buttonWidth, buttonHeight, "", s.StartButton)
-	drawButtonWithImage(screen, buttonX, exitButtonY, buttonWidth, buttonHeight, "", s.ExitButton)
+	drawButtonWithImage(screen, buttonX, startButtonY, startButtonWidth, startButtonHeight, "", s.StartButton)
+	drawButtonWithImage(screen, buttonX, exitButtonY, startButtonWidth, startButtonHeight, "", s.ExitButton)
 }

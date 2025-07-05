@@ -19,21 +19,24 @@ const (
 	ScreenDialog
 	ScreenGame
 	ScreenReveal
-	xMargin        = 210
-	yMargin        = 90
-	fontSize       = 20
-	headlineSize   = 24
-	lineHeight     = 24
-	HeadlineHeight = 28
+	xMargin              = 210
+	yMargin              = 90
+	fontSize             = 20
+	headlineSize         = 24
+	lineHeight           = 24
+	HeadlineHeight       = 28
+	sideButtonWidth      = 116
+	sideExitButtonHeight = 74
 )
 
 type UIManager struct {
-	screen  UIScreen
-	config  *ConfigScreen
-	dialog  *DialogScreen
-	reveal  *RevealScreen
-	start   *StartScreen
-	endGame bool
+	screen       UIScreen
+	config       *ConfigScreen
+	dialog       *DialogScreen
+	reveal       *RevealScreen
+	start        *StartScreen
+	endGame      bool
+	mouseWasDown bool
 }
 
 func NewUIManager() *UIManager {
@@ -64,10 +67,10 @@ func (u *UIManager) Update() error {
 			u.reveal = NewRevealScreen(&u.dialog.startGame, u.dialog.Game)
 			u.screen = ScreenReveal
 		} else {
-			u.dialog.Update()
+			u.dialog.Update(u)
 		}
 	case ScreenReveal:
-		u.reveal.Update()
+		u.reveal.Update(u)
 	}
 	return nil
 }

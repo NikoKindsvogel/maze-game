@@ -20,6 +20,11 @@ const (
 	offsetY    = 100
 )
 
+const (
+	revealExitButtonX = screenWidth - 130
+	revealExitButtonY = screenHeight - 150
+)
+
 type RevealScreen struct {
 	StartGame    *game.Game
 	FinalGame    *game.Game
@@ -30,9 +35,9 @@ type RevealScreen struct {
 	Treasure_big *ebiten.Image
 	RiverCorner  *ebiten.Image
 	ShowCurrent  bool
-	mouseWasDown bool
 	PlayerImages []*ebiten.Image
 	Background   *ebiten.Image
+	ExitButton   *ebiten.Image
 }
 
 func NewRevealScreen(start, final *game.Game) *RevealScreen {
@@ -44,6 +49,7 @@ func NewRevealScreen(start, final *game.Game) *RevealScreen {
 	treasure_big := loadImage("assets/cells/cell_treasure.png")
 	river_corner := loadImage("assets/cells/cell_river_corner.png")
 	bgImage := loadImage("assets/backgrounds/background.png")
+	exitButton := loadImage("assets/buttons/reveal_button_exitgame.png")
 
 	return &RevealScreen{
 		StartGame:    start,
@@ -56,21 +62,22 @@ func NewRevealScreen(start, final *game.Game) *RevealScreen {
 		RiverCorner:  river_corner,
 		PlayerImages: playerImages,
 		Background:   bgImage,
+		ExitButton:   exitButton,
 	}
 }
 
-func (r *RevealScreen) Update() error {
+func (r *RevealScreen) Update(u *UIManager) error {
 	mouseDown := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 	x, y := ebiten.CursorPosition()
 
-	if mouseDown && !r.mouseWasDown {
-		// Mouse just pressed — check if it hit the button
-		if x >= buttonX && x <= buttonX+buttonW && y >= buttonY && y <= buttonY+buttonH {
-			r.ShowCurrent = !r.ShowCurrent
+	if mouseDown && !u.mouseWasDown {
+		if x >= revealExitButtonX && x <= revealExitButtonX+sideButtonWidth &&
+			y >= revealExitButtonY && y <= revealExitButtonY+sideExitButtonHeight {
+			u.screen = ScreenStart
 		}
 	}
 
-	r.mouseWasDown = mouseDown
+	u.mouseWasDown = mouseDown
 	return nil
 }
 
@@ -82,9 +89,9 @@ func (r *RevealScreen) Draw(screen *ebiten.Image) {
 	}
 
 	if !r.ShowCurrent {
-		drawButton(screen, buttonX, buttonY, buttonWidth, buttonHeight, "Show Current")
+		drawButton(screen, buttonX, buttonY, startButtonWidth, startButtonHeight, "Show Current")
 	} else {
-		drawButton(screen, buttonX, buttonY, buttonWidth, buttonHeight, "Show Start")
+		drawButton(screen, buttonX, buttonY, startButtonWidth, startButtonHeight, "Show Start")
 	}
 
 	// Draw maze based on toggle
@@ -93,6 +100,8 @@ func (r *RevealScreen) Draw(screen *ebiten.Image) {
 	} else {
 		r.drawGame(screen, r.StartGame, offsetX, offsetY)
 	}
+
+	drawButtonWithImage(screen, revealExitButtonX, revealExitButtonY, sideButtonWidth, sideExitButtonHeight, "", r.ExitButton)
 }
 
 func (r *RevealScreen) drawGame(screen *ebiten.Image, g *game.Game, ox, oy int) {
