@@ -19,6 +19,8 @@ const (
 	ScreenDialog
 	ScreenGame
 	ScreenReveal
+	screenWidth      = 1200
+	screenHeight     = 900
 	xMargin          = 210
 	yMargin          = 90
 	fontSize         = 20
@@ -43,7 +45,6 @@ func NewUIManager() *UIManager {
 	return &UIManager{
 		screen: ScreenStart,
 		start:  NewStartScreen(),
-		config: NewConfigScreen(),
 	}
 }
 

@@ -13,9 +13,6 @@ type StartScreen struct {
 }
 
 const (
-	screenWidth  = 1200
-	screenHeight = 900
-
 	startButtonWidth  = 484
 	startButtonHeight = 47
 
@@ -43,6 +40,7 @@ func (s *StartScreen) Update(u *UIManager) error {
 	if mouseDown && !u.mouseWasDown {
 		if x >= buttonX && x <= buttonX+startButtonWidth &&
 			y >= startButtonY && y <= startButtonY+startButtonHeight {
+			u.config = NewConfigScreen()
 			u.screen = ScreenConfig
 		}
 		if x >= buttonX && x <= buttonX+startButtonWidth &&

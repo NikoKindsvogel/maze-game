@@ -4,6 +4,7 @@ import (
 	"math"
 	"maze-game/game"
 	"maze-game/maze"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -16,8 +17,6 @@ const (
 	buttonY    = 20
 	buttonW    = 140
 	buttonH    = 40
-	offsetX    = 100
-	offsetY    = 100
 )
 
 const (
@@ -102,9 +101,9 @@ func (r *RevealScreen) Draw(screen *ebiten.Image) {
 
 	// Draw maze based on toggle
 	if r.ShowCurrent {
-		r.drawGame(screen, r.FinalGame, offsetX, offsetY)
+		r.drawGame(screen, r.FinalGame)
 	} else {
-		r.drawGame(screen, r.StartGame, offsetX, offsetY)
+		r.drawGame(screen, r.StartGame)
 	}
 
 	if !r.ShowCurrent {
@@ -116,9 +115,13 @@ func (r *RevealScreen) Draw(screen *ebiten.Image) {
 	drawButtonWithImage(screen, revealExitButtonX, revealExitButtonY, sideButtonWidth, sideButtonHeight, "", r.ExitButton)
 }
 
-func (r *RevealScreen) drawGame(screen *ebiten.Image, g *game.Game, ox, oy int) {
+func (r *RevealScreen) drawGame(screen *ebiten.Image, g *game.Game) {
 	m := g.GetMaze()
 	players := g.Players
+
+	ox := (screenWidth - m.Size*cellSize) / 2
+	oy := (screenHeight - m.Size*cellSize) / 2
+
 	for row := 0; row < m.Size; row++ {
 		for col := 0; col < m.Size; col++ {
 			r.drawCell(screen, m, row, col, ox, oy)
@@ -328,4 +331,14 @@ func loadPlayerImages() []*ebiten.Image {
 		loadImage("assets/players/player_male_red.png"),
 		loadImage("assets/players/player_female_red.png"),
 	}
+}
+
+// Example: from "player_female_red.png" => "red"
+func extractColorFromFilename(filename string) string {
+	base := strings.TrimSuffix(filename, ".png")
+	parts := strings.Split(base, "_")
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
+	}
+	return "unknown"
 }
