@@ -9,6 +9,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/text"
 )
 
 type ConfigScreen struct {
@@ -21,9 +22,12 @@ type ConfigScreen struct {
 	numPlayers     int
 
 	enterPressedLastFrame bool
+
+	Background *ebiten.Image
 }
 
 func NewConfigScreen() *ConfigScreen {
+	bgImage := loadImage("assets/background.png")
 	return &ConfigScreen{
 		Done: false,
 		inputs: []string{
@@ -39,6 +43,7 @@ func NewConfigScreen() *ConfigScreen {
 			"River Push Distance:",
 		},
 		currentField: 0,
+		Background:   bgImage,
 	}
 }
 
@@ -99,27 +104,31 @@ func (c *ConfigScreen) Update() {
 }
 
 func (c *ConfigScreen) Draw(screen *ebiten.Image) {
-	screen.Fill(color.RGBA{30, 30, 30, 255})
+	var _ = ebitenutil.DebugPrintAt
+	if c.Background != nil {
+		op := &ebiten.DrawImageOptions{}
+		screen.DrawImage(c.Background, op)
+	}
 
 	title := "Maze Game Config - Press ENTER to confirm each field"
-	ebitenutil.DebugPrintAt(screen, title, 20, 20)
+	text.Draw(screen, title, HeadlineFont, xMargin, yMargin, color.White)
 
 	if !c.inputtingNames {
 		for i, label := range c.fieldLabels {
-			text := fmt.Sprintf("%s %s", label, c.inputs[i])
+			line := fmt.Sprintf("%s %s", label, c.inputs[i])
 			if i == c.currentField {
-				text += " <"
+				line += " <"
 			}
-			ebitenutil.DebugPrintAt(screen, text, 40, 80+i*30)
+			text.Draw(screen, line, MainFont, xMargin+HeadlineHeight, yMargin+HeadlineHeight+i*lineHeight, color.White)
 		}
 	} else {
-		ebitenutil.DebugPrintAt(screen, "Enter player names:", 40, 80)
+		text.Draw(screen, "Enter player names:", MainFont, xMargin+HeadlineHeight, yMargin+HeadlineHeight, color.White)
 		for i := 0; i < c.numPlayers; i++ {
-			text := fmt.Sprintf("Player %d: %s", i+1, c.playerNames[i])
+			line := fmt.Sprintf("Player %d: %s", i+1, c.playerNames[i])
 			if i == c.currentField {
-				text += " <"
+				line += " <"
 			}
-			ebitenutil.DebugPrintAt(screen, text, 60, 120+i*30)
+			text.Draw(screen, line, MainFont, xMargin+2*HeadlineHeight, yMargin+HeadlineHeight+lineHeight+(i*lineHeight), color.White)
 		}
 	}
 }

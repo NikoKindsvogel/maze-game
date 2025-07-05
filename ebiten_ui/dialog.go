@@ -8,7 +8,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text"
-	"golang.org/x/image/font/basicfont"
 )
 
 type DialogScreen struct {
@@ -23,17 +22,12 @@ type DialogScreen struct {
 	Background *ebiten.Image
 }
 
-const (
-	xMargin = 210
-	yMargin = 70
-)
-
 func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
 	g := game.NewGameWithConfig(size, holes, riverPush, names)
 	bgImage := loadImage("assets/background.png")
 	return &DialogScreen{
 		Game:      g,
-		Messages:  []string{"Game started. Use commands like: UP, DOWN, LEFT, RIGHT, SHOOT <dir>, SHOW, EXIT"},
+		Messages:  []string{"Game started. Use commands like: UP, DOWN, LEFT, RIGHT, SHOOT <dir>, EXIT"},
 		startGame: *g.Copy(),
 		KeyWasDown: map[ebiten.Key]bool{
 			ebiten.KeyArrowUp:    false,
@@ -98,9 +92,6 @@ func (d *DialogScreen) processCommand(input string) {
 	if len(parts) == 1 {
 		cmd := strings.ToUpper(parts[0])
 		switch cmd {
-		case "SHOW":
-			d.appendMessage(d.renderMap())
-			return
 		case "EXIT":
 			d.appendMessage("Game ended.")
 			d.Done = true
@@ -176,7 +167,6 @@ func (d *DialogScreen) Draw(screen *ebiten.Image) {
 	}
 
 	height := screen.Bounds().Dy()
-	lineHeight := 18
 
 	// Prepare input and turn display
 	inputLine := "> " + d.Input
@@ -190,74 +180,11 @@ func (d *DialogScreen) Draw(screen *ebiten.Image) {
 		if y < yMargin {
 			break // don’t draw past top margin
 		}
-		text.Draw(screen, d.Messages[i], basicfont.Face7x13, xMargin, y, color.White)
+		text.Draw(screen, d.Messages[i], MainFont, xMargin, y, color.White)
 		y -= lineHeight
 	}
 
 	// Draw turn and input lines
-	text.Draw(screen, turnInfo, basicfont.Face7x13, xMargin, height-yMargin-2*lineHeight, color.RGBA{200, 200, 0, 255})
-	text.Draw(screen, inputLine, basicfont.Face7x13, xMargin, height-yMargin-lineHeight, color.White)
-}
-
-func (d *DialogScreen) renderMap() string {
-	m := d.Game.GetMaze()
-	players := d.Game.GetPlayers()
-	size := m.Size
-	var out strings.Builder
-
-	// Top boundary
-	out.WriteString("+")
-	for c := 0; c < size; c++ {
-		out.WriteString("---+")
-	}
-	out.WriteString("\n")
-
-	for r := 0; r < size; r++ {
-		line := "|"
-		bottom := "+"
-
-		for c := 0; c < size; c++ {
-			cell := m.Grid[r][c]
-			content := "   "
-
-			for _, p := range players {
-				if p.Row == r && p.Col == c {
-					label := p.ID
-					if p.Hurt {
-						label = strings.ToLower(label)
-					}
-					if len(label) > 3 {
-						label = label[:3]
-					}
-					content = fmt.Sprintf("%-3s", label)
-					break
-				}
-			}
-
-			if strings.TrimSpace(content) == "" && m.TreasureOnMap && m.TreasureRow == r && m.TreasureCol == c {
-				content = " T "
-			}
-
-			if strings.TrimSpace(content) == "" {
-				content = " . "
-			}
-
-			rightWall := " "
-			if cell.Walls[1] {
-				rightWall = "|"
-			}
-			line += content + rightWall
-
-			bottomWall := "   "
-			if cell.Walls[2] {
-				bottomWall = "---"
-			}
-			bottom += bottomWall + "+"
-		}
-
-		out.WriteString(line + "\n")
-		out.WriteString(bottom + "\n")
-	}
-
-	return out.String()
+	text.Draw(screen, turnInfo, MainFont, xMargin, height-yMargin-HeadlineHeight, color.RGBA{200, 200, 0, 255})
+	text.Draw(screen, inputLine, MainFont, xMargin, height-yMargin, color.White)
 }
