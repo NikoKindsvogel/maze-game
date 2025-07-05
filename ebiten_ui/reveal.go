@@ -82,9 +82,9 @@ func (r *RevealScreen) Draw(screen *ebiten.Image) {
 	}
 
 	if !r.ShowCurrent {
-		drawButton(screen, buttonX, buttonY, "Show Current")
+		drawButton(screen, buttonX, buttonY, buttonWidth, buttonHeight, "Show Current")
 	} else {
-		drawButton(screen, buttonX, buttonY, "Show Start")
+		drawButton(screen, buttonX, buttonY, buttonWidth, buttonHeight, "Show Start")
 	}
 
 	// Draw maze based on toggle

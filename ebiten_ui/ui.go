@@ -83,7 +83,7 @@ func (u *UIManager) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return outsideWidth, outsideHeight
 }
 
-func drawButton(screen *ebiten.Image, x, y int, label string) {
+func drawButton(screen *ebiten.Image, x, y, buttonWidth, buttonHeight int, label string) {
 	// Draw button rectangle
 	btn := ebiten.NewImage(buttonWidth, buttonHeight)
 	btn.Fill(color.RGBA{100, 100, 255, 255}) // blue
@@ -95,6 +95,33 @@ func drawButton(screen *ebiten.Image, x, y int, label string) {
 	// Draw label text
 	textX := x + 10
 	textY := y + 25
+	text.Draw(screen, label, basicfont.Face7x13, textX, textY, color.White)
+}
+
+// Draws a button using a provided image and overlays a centered label.
+func drawButtonWithImage(screen *ebiten.Image, x, y, buttonWidth, buttonHeight int, label string, image *ebiten.Image) {
+	// Draw the image as button background
+	if image != nil {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(x), float64(y))
+		screen.DrawImage(image, op)
+	} else {
+		// fallback: draw solid color if image is nil
+		btn := ebiten.NewImage(buttonWidth, buttonHeight)
+		btn.Fill(color.RGBA{100, 100, 255, 255}) // blue fallback
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(x), float64(y))
+		screen.DrawImage(btn, op)
+	}
+
+	// Center the label text inside the button
+	textBounds := text.BoundString(basicfont.Face7x13, label)
+	textWidth := textBounds.Dx()
+	textHeight := textBounds.Dy()
+
+	textX := x + (buttonWidth-textWidth)/2
+	textY := y + (buttonHeight+textHeight)/2 - 2 // adjust for baseline
+
 	text.Draw(screen, label, basicfont.Face7x13, textX, textY, color.White)
 }
 
