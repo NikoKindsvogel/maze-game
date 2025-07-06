@@ -27,7 +27,7 @@ type ConfigScreen struct {
 }
 
 func NewConfigScreen() *ConfigScreen {
-	bgImage := loadImage("assets/backgrounds/background.png")
+	bgImage := loadImageFromEmbed("backgrounds/background.png")
 	return &ConfigScreen{
 		Done: false,
 		inputs: []string{

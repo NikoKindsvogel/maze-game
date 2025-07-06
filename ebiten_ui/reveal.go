@@ -50,16 +50,16 @@ type RevealScreen struct {
 func NewRevealScreen(start, final *game.Game) *RevealScreen {
 	images := loadCellImages()
 	playerImages, playerImagePaths := loadPlayerImages()
-	wallH := loadImage("assets/walls/wall_horizontal_long.png")
-	wallV := loadImage("assets/walls/wall_vertical_long.png")
-	treasure := loadImage("assets/cells/treasure.png")
-	treasure_big := loadImage("assets/cells/cell_treasure.png")
-	river_corner := loadImage("assets/cells/cell_river_corner.png")
-	bgImage := loadImage("assets/backgrounds/background.png")
-	exitButton := loadImage("assets/buttons/reveal_button_exitgame.png")
-	showNowButton := loadImage("assets/buttons/reveal_button_shownow.png")
-	showStartButton := loadImage("assets/buttons/reveal_button_showstart.png")
-	playerBackground := loadImage("assets/buttons/reveal_button_playercolor.png")
+	wallH := loadImageFromEmbed("walls/wall_horizontal_long.png")
+	wallV := loadImageFromEmbed("walls/wall_vertical_long.png")
+	treasure := loadImageFromEmbed("cells/treasure.png")
+	treasure_big := loadImageFromEmbed("cells/cell_treasure_2.png")
+	river_corner := loadImageFromEmbed("cells/cell_river_corner.png")
+	bgImage := loadImageFromEmbed("backgrounds/background.png")
+	exitButton := loadImageFromEmbed("buttons/reveal_button_exitgame.png")
+	showNowButton := loadImageFromEmbed("buttons/reveal_button_shownow.png")
+	showStartButton := loadImageFromEmbed("buttons/reveal_button_showstart.png")
+	playerBackground := loadImageFromEmbed("buttons/reveal_button_playercolor.png")
 
 	return &RevealScreen{
 		StartGame:        start,
@@ -304,6 +304,9 @@ func (r *RevealScreen) drawPlayers(screen *ebiten.Image, ox, oy int, players []*
 	legendY := 20
 	lineHeight := 50 // spacing between entries (including background)
 
+	circleRadius := 10
+	circleMargin := 10
+
 	for i, player := range players {
 		if i >= len(r.PlayerImages) {
 			continue // ignore extra players
@@ -318,9 +321,9 @@ func (r *RevealScreen) drawPlayers(screen *ebiten.Image, ox, oy int, players []*
 		screen.DrawImage(img, op)
 
 		// --- Extract color from image filename ---
-		color := "unknown"
+		myColor := "unknown"
 		if i < len(r.PlayerImagePaths) {
-			color = extractColorFromFilename(r.PlayerImagePaths[i])
+			myColor = extractColorFromFilename(r.PlayerImagePaths[i])
 		}
 
 		// --- Draw background for legend item ---
@@ -328,23 +331,35 @@ func (r *RevealScreen) drawPlayers(screen *ebiten.Image, ox, oy int, players []*
 		bgOp.GeoM.Translate(float64(legendX), float64(legendY+i*lineHeight))
 		screen.DrawImage(r.PlayerBackground, bgOp)
 
-		// --- Draw player name + color on top of background ---
-		textX := legendX + 10
-		textY := legendY + i*lineHeight + 30 // vertical offset inside background
-		text.Draw(screen, player.ID, MainFont, textX, textY, colorRGBA(color))
+		// --- Draw small color circle ---
+		circleX := legendX + circleMargin + circleRadius
+		circleY := legendY + i*lineHeight + lineHeight/2
+
+		circleImg := ebiten.NewImage(circleRadius*2, circleRadius*2)
+		circleImg.Fill(colorRGBA(myColor))
+
+		circleOp := &ebiten.DrawImageOptions{}
+		circleOp.GeoM.Translate(float64(circleX-circleRadius), float64(circleY-circleRadius))
+		screen.DrawImage(circleImg, circleOp)
+
+		// --- Draw player name in black ---
+		textX := circleX + circleRadius + 10
+		textY := legendY + i*lineHeight + 32 // vertical center alignment
+
+		text.Draw(screen, player.ID, HeadlineFont, textX, textY, color.Black)
 	}
 }
 
 func loadCellImages() map[maze.CellType]*ebiten.Image {
 	return map[maze.CellType]*ebiten.Image{
-		maze.Empty:    loadImage("assets/cells/cell_empty.png"),
-		maze.Hospital: loadImage("assets/cells/cell_hospital.png"),
-		maze.Exit:     loadImage("assets/cells/cell_exit.png"),
-		maze.Hole:     loadImage("assets/cells/cell_hole.png"),
-		maze.Dragon:   loadImage("assets/cells/cell_dragon.png"),
-		maze.Armory:   loadImage("assets/cells/cell_armory.png"),
-		maze.River:    loadImage("assets/cells/cell_river.png"),
-		maze.Estuary:  loadImage("assets/cells/cell_estuary.png"),
+		maze.Empty:    loadImageFromEmbed("cells/cell_empty_2.png"),
+		maze.Hospital: loadImageFromEmbed("cells/cell_hospital_2.png"),
+		maze.Exit:     loadImageFromEmbed("cells/cell_exit.png"),
+		maze.Hole:     loadImageFromEmbed("cells/cell_hole_2.png"),
+		maze.Dragon:   loadImageFromEmbed("cells/cell_dragon_2.png"),
+		maze.Armory:   loadImageFromEmbed("cells/cell_armory_2.png"),
+		maze.River:    loadImageFromEmbed("cells/cell_river.png"),
+		maze.Estuary:  loadImageFromEmbed("cells/cell_estuary.png"),
 	}
 }
 
@@ -373,14 +388,18 @@ func colorRGBA(name string) color.Color {
 
 func loadPlayerImages() ([]*ebiten.Image, []string) {
 	paths := []string{
-		"assets/players2/player_cyan.png",
-		"assets/players2/player_magenta.png",
-		"assets/players2/player_white.png",
-		"assets/players2/player_yellow.png",
+		"players2/player_cyan.png",
+		"players2/player_black.png",
+		"players2/player_magenta.png",
+		"players2/player_red.png",
+		"players2/player_white.png",
+		"players2/player_green.png",
+		"players2/player_yellow.png",
+		"players2/player_blue.png",
 	}
 	images := make([]*ebiten.Image, len(paths))
 	for i, path := range paths {
-		images[i] = loadImage(path)
+		images[i] = loadImageFromEmbed(path)
 	}
 	return images, paths
 }

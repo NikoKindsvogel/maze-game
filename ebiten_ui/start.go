@@ -21,9 +21,9 @@ const (
 )
 
 func NewStartScreen() *StartScreen {
-	bgImage := loadImage("assets/backgrounds/startscreen_background.png")
-	startImage := loadImage("assets/buttons/startscreen_button_new.png")
-	exitImage := loadImage("assets/buttons/startscreen_button_exit.png")
+	bgImage := loadImageFromEmbed("backgrounds/startscreen_background.png")
+	startImage := loadImageFromEmbed("buttons/startscreen_button_new.png")
+	exitImage := loadImageFromEmbed("buttons/startscreen_button_exit.png")
 	return &StartScreen{
 		Background:  bgImage,
 		StartButton: startImage,

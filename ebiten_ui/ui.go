@@ -1,9 +1,11 @@
 package ebiten_ui
 
 import (
+	"bytes"
 	"image"
 	"image/color"
 	"log"
+	"maze-game/assets"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -135,13 +137,25 @@ func drawButtonWithImage(screen *ebiten.Image, x, y, buttonWidth, buttonHeight i
 	text.Draw(screen, label, basicfont.Face7x13, textX, textY, color.White)
 }
 
-func loadImage(path string) *ebiten.Image {
-	f, err := os.Open(path)
+// func loadImage(path string) *ebiten.Image {
+// 	f, err := os.Open(path)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	defer f.Close()
+// 	img, _, err := image.Decode(f)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	return ebiten.NewImageFromImage(img)
+// }
+
+func loadImageFromEmbed(path string) *ebiten.Image {
+	data, err := assets.EmbeddedAssets.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
-	img, _, err := image.Decode(f)
+	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		log.Fatal(err)
 	}
