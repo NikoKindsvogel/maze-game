@@ -172,7 +172,7 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 		if p.HasTreasure && !p.Hurt {
 			status += "You reached the exit with the treasure. You win!"
 		} else if p.Hurt {
-			status += "You're hurt and can't escape. Go to a hospital first."
+			status += "You reached the exit but you're hurt and can't escape. Go to a hospital first."
 		} else {
 			status += "You reached the exit but don't have the treasure."
 		}
@@ -189,8 +189,13 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 			g.Maze.TreasureOnMap = true
 			p.HasTreasure = false
 		}
-		p.Hurt = true
-		status += "The dragon burned you. You're hurt and dropped the treasure."
+		if p.Hurt {
+			status += "The dragon burned you. You're still hurt."
+		} else {
+			p.Hurt = true
+			status += "The dragon burned you. You're hurt now."
+		}
+
 	case maze.Hospital:
 		if p.Hurt {
 			p.Hurt = false
@@ -199,8 +204,12 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 			status += "You visited the hospital, but you're already fine."
 		}
 	case maze.Armory:
-		p.Bullet = true
-		status += "You found an armory and received a bullet!"
+		if p.Bullet {
+			status += "You found an armory but already had a bullet!"
+		} else {
+			p.Bullet = true
+			status += "You found an armory and received a bullet!"
+		}
 	case maze.River:
 		status += "You stepped into a river. "
 		status += g.moveAlongRiver(p)
@@ -399,10 +408,12 @@ func (g *Game) Shoot(dirStr string) string {
 					m.TreasureRow = p.Row
 					m.TreasureCol = p.Col
 					m.TreasureOnMap = true
+					shooter.Bullet = false
+					return fmt.Sprintf("You shot player %s! They are now hurt and dropped the treasure.", p.ID)
+				} else {
+					shooter.Bullet = false
+					return fmt.Sprintf("You shot player %s! They are now hurt.", p.ID)
 				}
-
-				shooter.Bullet = false
-				return fmt.Sprintf("You shot player %s! They are now hurt and dropped the treasure.", p.ID)
 			}
 		}
 
