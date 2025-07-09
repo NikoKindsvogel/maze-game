@@ -134,142 +134,157 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 
 	p := g.CurrentPlayer()
 	cell := g.Maze.Grid[p.Row][p.Col]
-	if cell.Walls[dir] {
-		if cell.Type == maze.Hole {
-			g.teleportPlayerFromHole(p)
-			return p.ID + ": You hit a wall and got teleported through the hole!"
-		}
-		return p.ID + ": You hit a wall."
-	}
 
-	nr, nc := maze.Neighbor(p.Row, p.Col, dir)
-	if !g.Maze.InBounds(nr, nc) {
-		return p.ID + ": Out of bounds."
-	}
-
-	var visibilityMsgs []string
-
-	target := g.Maze.Grid[nr][nc]
-
-	// Move player
-	p.Row, p.Col = nr, nc
 	status := p.ID + ": "
 	var treasure string
 
-	// Check if the player moves onto the treasure
-	if g.Maze.TreasureOnMap && nr == g.Maze.TreasureRow && nc == g.Maze.TreasureCol {
-		if p.Hurt {
-			treasure += " You found the treasure but can't pick it up because you are hurt!"
-		} else {
-			treasure += " You found the treasure!"
-			p.HasTreasure = true
-			g.Maze.TreasureOnMap = false
+	// Handle wall
+	if cell.Walls[dir] {
+		// Hole teleportation
+		switch cell.Type {
+		case maze.Hole:
+			g.teleportPlayerFromHole(p)
+			status += "You hit a wall and got teleported through the hole! "
+		case maze.River:
+			status += "You hit a wall but the river pushes you! "
+			status += g.moveAlongRiver(p)
+		default:
+			// Plain wall hit — return early with visibility from current position
+			vis := g.computeVisibilityMessages(p)
+			return status + "You hit a wall. " + strings.Join(vis, " ")
+		}
+	} else {
+		// Valid move
+		nr, nc := maze.Neighbor(p.Row, p.Col, dir)
+		if !g.Maze.InBounds(nr, nc) {
+			vis := g.computeVisibilityMessages(p)
+			return status + "Out of bounds. " + strings.Join(vis, " ")
+		}
+
+		target := g.Maze.Grid[nr][nc]
+		p.Row, p.Col = nr, nc
+
+		// Check treasure
+		if g.Maze.TreasureOnMap && nr == g.Maze.TreasureRow && nc == g.Maze.TreasureCol {
+			if p.Hurt {
+				treasure += " You found the treasure but can't pick it up because you are hurt!"
+			} else {
+				treasure += " You found the treasure!"
+				p.HasTreasure = true
+				g.Maze.TreasureOnMap = false
+			}
+		}
+
+		switch target.Type {
+		case maze.Exit:
+			if p.HasTreasure && !p.Hurt {
+				status += "You reached the exit with the treasure. You win!"
+			} else if p.Hurt {
+				status += "You reached the exit but you're hurt and can't escape. Go to a hospital first."
+			} else {
+				status += "You reached the exit but don't have the treasure."
+			}
+		case maze.Hole:
+			g.teleportPlayerFromHole(p)
+			status += "You fell into a hole and got teleported!"
+		case maze.Dragon:
+			if p.HasTreasure {
+				return p.ID + ": You stepped on the dragon while carrying the treasure. The dragon wins! Game over."
+			}
+			if p.HasTreasure {
+				g.Maze.TreasureRow = p.Row
+				g.Maze.TreasureCol = p.Col
+				g.Maze.TreasureOnMap = true
+				p.HasTreasure = false
+			}
+			if p.Hurt {
+				status += "The dragon burned you. You're still hurt."
+			} else {
+				p.Hurt = true
+				status += "The dragon burned you. You're hurt now."
+			}
+		case maze.Hospital:
+			if p.Hurt {
+				p.Hurt = false
+				status += "You reached the hospital and are healed!"
+			} else {
+				status += "You visited the hospital, but you're already fine."
+			}
+		case maze.Armory:
+			if p.Bullet {
+				status += "You found an armory but already had a bullet!"
+			} else {
+				p.Bullet = true
+				status += "You found an armory and received a bullet!"
+			}
+		case maze.River:
+			status += "You stepped into a river. "
+			status += g.moveAlongRiver(p)
+		case maze.Estuary:
+			status += "You stepped directly on the estuary."
+		default:
+			status += "You moved successfully."
 		}
 	}
 
-	switch target.Type {
-	case maze.Exit:
-		if p.HasTreasure && !p.Hurt {
-			status += "You reached the exit with the treasure. You win!"
-		} else if p.Hurt {
-			status += "You reached the exit but you're hurt and can't escape. Go to a hospital first."
-		} else {
-			status += "You reached the exit but don't have the treasure."
-		}
-	case maze.Hole:
-		g.teleportPlayerFromHole(p)
-		status += "You fell into a hole and got teleported!"
-	case maze.Dragon:
-		if p.HasTreasure {
-			return p.ID + ": You stepped on the dragon while carrying the treasure. The dragon wins! Game over."
-		}
-		if p.HasTreasure {
-			g.Maze.TreasureRow = p.Row
-			g.Maze.TreasureCol = p.Col
-			g.Maze.TreasureOnMap = true
-			p.HasTreasure = false
-		}
-		if p.Hurt {
-			status += "The dragon burned you. You're still hurt."
-		} else {
-			p.Hurt = true
-			status += "The dragon burned you. You're hurt now."
-		}
+	// Recompute visibility from final position
+	visibilityMsgs := g.computeVisibilityMessages(p)
 
-	case maze.Hospital:
-		if p.Hurt {
-			p.Hurt = false
-			status += "You reached the hospital and are healed!"
-		} else {
-			status += "You visited the hospital, but you're already fine."
-		}
-	case maze.Armory:
-		if p.Bullet {
-			status += "You found an armory but already had a bullet!"
-		} else {
-			p.Bullet = true
-			status += "You found an armory and received a bullet!"
-		}
-	case maze.River:
-		status += "You stepped into a river. "
-		status += g.moveAlongRiver(p)
-	case maze.Estuary:
-		status += "You stepped directly on the estuary."
-	default:
-		status += "You moved successfully."
+	if len(visibilityMsgs) > 0 {
+		status += " " + strings.Join(visibilityMsgs, " ")
 	}
+	return status + treasure
+}
 
-	// Dragon visibility (4 directions)
+func (g *Game) computeVisibilityMessages(p *Player) []string {
+	var msgs []string
+
+	// Dragon visibility
 	for r := p.Row - 1; r >= 0; r-- {
-		cell := g.Maze.Grid[r][p.Col]
 		if g.Maze.Grid[r+1][p.Col].Walls[maze.Up] {
 			break
 		}
-		if cell.Type == maze.Dragon {
-			visibilityMsgs = append(visibilityMsgs, "The dragon sees you!")
+		if g.Maze.Grid[r][p.Col].Type == maze.Dragon {
+			msgs = append(msgs, "The dragon sees you!")
 			break
 		}
 	}
 	for r := p.Row + 1; r < g.Maze.Size; r++ {
-		cell := g.Maze.Grid[r][p.Col]
 		if g.Maze.Grid[r-1][p.Col].Walls[maze.Down] {
 			break
 		}
-		if cell.Type == maze.Dragon {
-			visibilityMsgs = append(visibilityMsgs, "The dragon sees you!")
+		if g.Maze.Grid[r][p.Col].Type == maze.Dragon {
+			msgs = append(msgs, "The dragon sees you!")
 			break
 		}
 	}
 	for c := p.Col - 1; c >= 0; c-- {
-		cell := g.Maze.Grid[p.Row][c]
 		if g.Maze.Grid[p.Row][c+1].Walls[maze.Left] {
 			break
 		}
-		if cell.Type == maze.Dragon {
-			visibilityMsgs = append(visibilityMsgs, "The dragon sees you!")
+		if g.Maze.Grid[p.Row][c].Type == maze.Dragon {
+			msgs = append(msgs, "The dragon sees you!")
 			break
 		}
 	}
 	for c := p.Col + 1; c < g.Maze.Size; c++ {
-		cell := g.Maze.Grid[p.Row][c]
 		if g.Maze.Grid[p.Row][c-1].Walls[maze.Right] {
 			break
 		}
-		if cell.Type == maze.Dragon {
-			visibilityMsgs = append(visibilityMsgs, "The dragon sees you!")
+		if g.Maze.Grid[p.Row][c].Type == maze.Dragon {
+			msgs = append(msgs, "The dragon sees you!")
 			break
 		}
 	}
 
-	if g.ShowVisibilityMessages {
-		// Treasure visibility (if on map)
-		if g.Maze.TreasureOnMap {
+	if g.ShowVisibilityMessages && g.Maze.TreasureOnMap {
+		if p.Col == g.Maze.TreasureCol {
 			for r := p.Row - 1; r >= 0; r-- {
 				if g.Maze.Grid[r+1][p.Col].Walls[maze.Up] {
 					break
 				}
-				if r == g.Maze.TreasureRow && p.Col == g.Maze.TreasureCol {
-					visibilityMsgs = append(visibilityMsgs, "You see the treasure!")
+				if r == g.Maze.TreasureRow {
+					msgs = append(msgs, "You see the treasure!")
 					break
 				}
 			}
@@ -277,17 +292,19 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 				if g.Maze.Grid[r-1][p.Col].Walls[maze.Down] {
 					break
 				}
-				if r == g.Maze.TreasureRow && p.Col == g.Maze.TreasureCol {
-					visibilityMsgs = append(visibilityMsgs, "You see the treasure!")
+				if r == g.Maze.TreasureRow {
+					msgs = append(msgs, "You see the treasure!")
 					break
 				}
 			}
+		}
+		if p.Row == g.Maze.TreasureRow {
 			for c := p.Col - 1; c >= 0; c-- {
 				if g.Maze.Grid[p.Row][c+1].Walls[maze.Left] {
 					break
 				}
-				if p.Row == g.Maze.TreasureRow && c == g.Maze.TreasureCol {
-					visibilityMsgs = append(visibilityMsgs, "You see the treasure!")
+				if c == g.Maze.TreasureCol {
+					msgs = append(msgs, "You see the treasure!")
 					break
 				}
 			}
@@ -295,18 +312,15 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 				if g.Maze.Grid[p.Row][c-1].Walls[maze.Right] {
 					break
 				}
-				if p.Row == g.Maze.TreasureRow && c == g.Maze.TreasureCol {
-					visibilityMsgs = append(visibilityMsgs, "You see the treasure!")
+				if c == g.Maze.TreasureCol {
+					msgs = append(msgs, "You see the treasure!")
 					break
 				}
 			}
 		}
 	}
 
-	if len(visibilityMsgs) > 0 {
-		status += " " + strings.Join(visibilityMsgs, " ")
-	}
-	return status + treasure
+	return msgs
 }
 
 func (g *Game) moveAlongRiver(p *Player) string {
@@ -498,8 +512,10 @@ func (g *Game) Copy() *Game {
 		}
 	}
 
+	newMaze := maze.CopyMaze(g.Maze)
+
 	return &Game{
-		Maze:                   g.Maze, // shared (read-only)
+		Maze:                   newMaze,
 		Players:                playersCopy,
 		current:                g.current,
 		ShowVisibilityMessages: false, // suppress output during sim
