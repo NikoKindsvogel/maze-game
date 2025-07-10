@@ -216,7 +216,7 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 		}
 
 		// Check treasure
-		if g.Maze.TreasureOnMap && nr == g.Maze.TreasureRow && nc == g.Maze.TreasureCol {
+		if g.Maze.TreasureOnMap && p.Row == g.Maze.TreasureRow && p.Col == g.Maze.TreasureCol {
 			if p.Hurt {
 				treasure += " You found the treasure but can't pick it up because you are hurt!"
 			} else {
