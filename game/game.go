@@ -177,20 +177,18 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 			g.teleportPlayerFromHole(p)
 			status += "You fell into a hole and got teleported!"
 		case maze.Dragon:
-			if p.HasTreasure {
-				return p.ID + ": You stepped on the dragon while carrying the treasure. The dragon wins! Game over."
-			}
-			if p.HasTreasure {
-				g.Maze.TreasureRow = p.Row
-				g.Maze.TreasureCol = p.Col
-				g.Maze.TreasureOnMap = true
-				p.HasTreasure = false
-			}
 			if p.Hurt {
 				status += "The dragon burned you. You're still hurt."
 			} else {
 				p.Hurt = true
 				status += "The dragon burned you. You're hurt now."
+			}
+			if p.HasTreasure {
+				g.Maze.TreasureRow = g.Maze.TreasureStartRow
+				g.Maze.TreasureCol = g.Maze.TreasureStartCol
+				g.Maze.TreasureOnMap = true
+				p.HasTreasure = false
+				status += " You lost the treasure and it was returned to its starting position."
 			}
 		case maze.Hospital:
 			if p.Hurt {

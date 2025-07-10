@@ -7,11 +7,13 @@ type Cell struct {
 }
 
 type Maze struct {
-	Size          int
-	Grid          [][]*Cell
-	TreasureRow   int
-	TreasureCol   int
-	TreasureOnMap bool
+	Size             int
+	Grid             [][]*Cell
+	TreasureRow      int
+	TreasureCol      int
+	TreasureOnMap    bool
+	TreasureStartRow int
+	TreasureStartCol int
 }
 
 // CreateMaze initializes an empty maze with border walls

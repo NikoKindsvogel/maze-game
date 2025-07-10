@@ -108,6 +108,8 @@ func placeTreasure(m *maze.Maze, minDist int) {
 			m.TreasureRow = r
 			m.TreasureCol = c
 			m.TreasureOnMap = true
+			m.TreasureStartRow = r
+			m.TreasureStartCol = c
 			return
 		}
 	}
