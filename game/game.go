@@ -164,17 +164,6 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 		target := g.Maze.Grid[nr][nc]
 		p.Row, p.Col = nr, nc
 
-		// Check treasure
-		if g.Maze.TreasureOnMap && nr == g.Maze.TreasureRow && nc == g.Maze.TreasureCol {
-			if p.Hurt {
-				treasure += " You found the treasure but can't pick it up because you are hurt!"
-			} else {
-				treasure += " You found the treasure!"
-				p.HasTreasure = true
-				g.Maze.TreasureOnMap = false
-			}
-		}
-
 		switch target.Type {
 		case maze.Exit:
 			if p.HasTreasure && !p.Hurt {
@@ -224,6 +213,17 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 			status += "You stepped directly on the estuary."
 		default:
 			status += "You moved successfully."
+		}
+
+		// Check treasure
+		if g.Maze.TreasureOnMap && nr == g.Maze.TreasureRow && nc == g.Maze.TreasureCol {
+			if p.Hurt {
+				treasure += " You found the treasure but can't pick it up because you are hurt!"
+			} else {
+				treasure += " You found the treasure!"
+				p.HasTreasure = true
+				g.Maze.TreasureOnMap = false
+			}
 		}
 	}
 
