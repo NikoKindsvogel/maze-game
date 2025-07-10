@@ -59,8 +59,8 @@ func (u *UIManager) Update() error {
 		u.start.Update(u)
 	case ScreenConfig:
 		if u.config.Done {
-			size, holes, riverPush, names := u.config.GetConfig()
-			u.dialog = NewDialogScreen(size, holes, riverPush, names)
+			size, holes, riverLength, riverPush, names := u.config.GetConfig()
+			u.dialog = NewDialogScreen(size, holes, riverLength, riverPush, names)
 			u.screen = ScreenDialog
 		} else {
 			u.config.Update()

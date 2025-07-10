@@ -28,8 +28,8 @@ type DialogScreen struct {
 	ExitButton *ebiten.Image
 }
 
-func NewDialogScreen(size, holes, riverPush int, names []string) *DialogScreen {
-	g := game.NewGameWithConfig(size, holes, riverPush, names)
+func NewDialogScreen(size, holes, riverLength, riverPush int, names []string) *DialogScreen {
+	g := game.NewGameWithConfig(size, holes, riverLength, riverPush, names)
 	bgImage := loadImageFromEmbed("backgrounds/background.png")
 	exitImage := loadImageFromEmbed("buttons/dialog_button_exit.png")
 	return &DialogScreen{

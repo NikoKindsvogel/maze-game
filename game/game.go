@@ -27,7 +27,7 @@ func NewGame() *Game {
 		NumArmories:             1,
 		NumHospitals:            1,
 		NumDragons:              1,
-		RiverLength:             size - 1,
+		RiverLength:             size + 2,
 		ExtraOpenings:           0,
 		MinTreasureExitDistance: size - 2,
 	}
@@ -53,14 +53,14 @@ func NewGame() *Game {
 	}
 }
 
-func NewGameWithConfig(size, holes, riverPush int, names []string) *Game {
+func NewGameWithConfig(size, holes, riverLength, riverPush int, names []string) *Game {
 	cfg := mazegen.MazeConfig{
 		Size:                    size,
 		NumHoles:                holes,
 		NumArmories:             1,
 		NumHospitals:            1,
 		NumDragons:              1,
-		RiverLength:             size - 1,
+		RiverLength:             riverLength,
 		ExtraOpenings:           15,
 		MinTreasureExitDistance: size - 2,
 	}

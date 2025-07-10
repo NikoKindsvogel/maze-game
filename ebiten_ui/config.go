@@ -31,16 +31,18 @@ func NewConfigScreen() *ConfigScreen {
 	return &ConfigScreen{
 		Done: false,
 		inputs: []string{
-			"7", // Maze size
+			"6", // Maze size
 			"3", // Num holes
 			"2", // Num players
 			"2", // River push
+			"8", // River lengt
 		},
 		fieldLabels: []string{
 			"Maze Size:",
 			"Number of Holes:",
 			"Number of Players:",
 			"River Push Distance:",
+			"River Length:",
 		},
 		currentField: 0,
 		Background:   bgImage,
@@ -133,10 +135,11 @@ func (c *ConfigScreen) Draw(screen *ebiten.Image) {
 	}
 }
 
-func (c *ConfigScreen) GetConfig() (size, holes, riverPush int, names []string) {
+func (c *ConfigScreen) GetConfig() (size, holes, riverLength, riverPush int, names []string) {
 	size, _ = strconv.Atoi(c.inputs[0])
 	holes, _ = strconv.Atoi(c.inputs[1])
 	riverPush, _ = strconv.Atoi(c.inputs[3])
+	riverLength, _ = strconv.Atoi(c.inputs[4])
 
 	names = make([]string, len(c.playerNames))
 	for i, name := range c.playerNames {
