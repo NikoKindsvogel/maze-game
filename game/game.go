@@ -214,16 +214,16 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 		default:
 			status += "You moved successfully."
 		}
+	}
 
-		// Check treasure
-		if g.Maze.TreasureOnMap && p.Row == g.Maze.TreasureRow && p.Col == g.Maze.TreasureCol {
-			if p.Hurt {
-				treasure += " You found the treasure but can't pick it up because you are hurt!"
-			} else {
-				treasure += " You found the treasure!"
-				p.HasTreasure = true
-				g.Maze.TreasureOnMap = false
-			}
+	// Check treasure
+	if g.Maze.TreasureOnMap && p.Row == g.Maze.TreasureRow && p.Col == g.Maze.TreasureCol {
+		if p.Hurt {
+			treasure += " You found the treasure but can't pick it up because you are hurt!"
+		} else {
+			treasure += " You found the treasure!"
+			p.HasTreasure = true
+			g.Maze.TreasureOnMap = false
 		}
 	}
 
