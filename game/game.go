@@ -17,6 +17,7 @@ type Game struct {
 	current                int
 	ShowVisibilityMessages bool
 	RiverMoveLength        int
+	MoveHistory            []string
 }
 
 func NewGame() *Game {
@@ -121,6 +122,7 @@ func (g *Game) PerformAction(cmd string) (string, string) {
 
 	if usedTurn {
 		g.NextPlayer()
+		g.MoveHistory = append(g.MoveHistory, cmd)
 	}
 
 	return res, g.CurrentPlayer().ID
@@ -510,6 +512,7 @@ func (g *Game) Copy() *Game {
 		}
 	}
 
+	// Deep copy Maze
 	newMaze := maze.CopyMaze(g.Maze)
 
 	return &Game{

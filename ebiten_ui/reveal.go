@@ -45,6 +45,8 @@ type RevealScreen struct {
 	ShowNowButton    *ebiten.Image
 	ShowStartButton  *ebiten.Image
 	PlayerBackground *ebiten.Image
+	currentMove      int
+	KeyWasDown       map[ebiten.Key]bool
 }
 
 func NewRevealScreen(start, final *game.Game) *RevealScreen {
@@ -77,6 +79,14 @@ func NewRevealScreen(start, final *game.Game) *RevealScreen {
 		ShowNowButton:    showNowButton,
 		ShowStartButton:  showStartButton,
 		PlayerBackground: playerBackground,
+		currentMove:      0,
+		KeyWasDown: map[ebiten.Key]bool{
+			ebiten.KeyArrowUp:    false,
+			ebiten.KeyArrowDown:  false,
+			ebiten.KeyArrowLeft:  false,
+			ebiten.KeyArrowRight: false,
+			ebiten.KeyEnter:      false,
+		},
 	}
 }
 
@@ -96,6 +106,28 @@ func (r *RevealScreen) Update(u *UIManager) error {
 	}
 
 	u.mouseWasDown = mouseDown
+
+	if !r.ShowCurrent && ebiten.IsKeyPressed(ebiten.KeyRight) {
+		if !r.KeyWasDown[ebiten.KeyRight] {
+			if r.currentMove < len(r.FinalGame.MoveHistory) {
+				r.currentMove++
+			}
+		}
+		r.KeyWasDown[ebiten.KeyRight] = true
+	} else {
+		r.KeyWasDown[ebiten.KeyRight] = false
+	}
+
+	if !r.ShowCurrent && ebiten.IsKeyPressed(ebiten.KeyLeft) {
+		if !r.KeyWasDown[ebiten.KeyLeft] {
+			if r.currentMove > 0 {
+				r.currentMove--
+			}
+		}
+		r.KeyWasDown[ebiten.KeyLeft] = true
+	} else {
+		r.KeyWasDown[ebiten.KeyLeft] = false
+	}
 	return nil
 }
 
@@ -106,11 +138,15 @@ func (r *RevealScreen) Draw(screen *ebiten.Image) {
 		screen.DrawImage(r.Background, op)
 	}
 
-	// Draw maze based on toggle
 	if r.ShowCurrent {
 		r.drawGame(screen, r.FinalGame)
 	} else {
-		r.drawGame(screen, r.StartGame)
+		copied := r.StartGame.Copy()
+		for i := 0; i < r.currentMove && i < len(r.FinalGame.MoveHistory); i++ {
+			move := r.FinalGame.MoveHistory[i]
+			copied.PerformAction(move)
+		}
+		r.drawGame(screen, copied)
 	}
 
 	if !r.ShowCurrent {
