@@ -170,7 +170,7 @@ func (d *DialogScreen) processCommand(input string) {
 	d.appendMessage(fmt.Sprintf("%s's turn: %s", p.ID, input))
 	d.appendMessage(result)
 
-	if strings.Contains(strings.ToLower(result), "game over") {
+	if strings.Contains(strings.ToLower(result), "win") {
 		d.Done = true
 	}
 }
