@@ -21,6 +21,7 @@ const (
 	Right
 	Down
 	Left
+	None
 )
 
 func Opposite(d Direction) Direction {

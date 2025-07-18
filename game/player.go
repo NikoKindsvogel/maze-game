@@ -9,11 +9,12 @@ import (
 )
 
 type Player struct {
-	ID          string
-	Row, Col    int
-	Hurt        bool
-	HasTreasure bool
-	Bullet      bool
+	ID           string
+	Row, Col     int
+	Hurt         bool
+	HasTreasure  bool
+	Bullet       bool
+	LastRiverDir maze.Direction
 }
 
 func PlacePlayers(m *maze.Maze, count int) []*Player {

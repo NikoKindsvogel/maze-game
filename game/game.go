@@ -137,6 +137,12 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 	p := g.CurrentPlayer()
 	cell := g.Maze.Grid[p.Row][p.Col]
 
+	if cell.Type == maze.River {
+		p.LastRiverDir = cell.RiverDir
+	} else {
+		p.LastRiverDir = maze.None
+	}
+
 	status := p.ID + ": "
 	var treasure string
 
@@ -207,7 +213,17 @@ func (g *Game) moveCurrentPlayerInDirection(dirStr string) string {
 				status += "You found an armory and received a bullet!"
 			}
 		case maze.River:
-			status += "You stepped into a river. "
+
+			if p.LastRiverDir != maze.None {
+				if dir == p.LastRiverDir {
+					status += " You moved down the river. "
+				} else if dir == maze.Opposite(p.LastRiverDir) {
+					status += " You moved up the river. "
+				}
+			} else {
+				status += "You stepped into a river. "
+			}
+
 			status += g.moveAlongRiver(p)
 		case maze.Estuary:
 			status += "You stepped directly on the estuary."
